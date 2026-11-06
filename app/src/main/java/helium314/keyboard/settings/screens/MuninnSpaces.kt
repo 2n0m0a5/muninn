@@ -169,7 +169,7 @@ fun MuninnTypingScreen(
                                 icon = R.drawable.ic_settings_gesture, onClick = onClickGesture) { Chevron() }
                         MuninnRowItem(stringResource(R.string.dictionary_settings_category), stringResource(R.string.muninn_dictionaries_description),
                             icon = R.drawable.ic_dictionary, onClick = onClickDictionaries) { Chevron() }
-                        MuninnRowItem(stringResource(R.string.settings_screen_secondary_layouts), stringResource(R.string.muninn_secondary_layouts_description),
+                        MuninnRowItem(stringResource(R.string.muninn_secondary_layouts_title), stringResource(R.string.muninn_secondary_layouts_description),
                             icon = R.drawable.ic_settings_layout, onClick = onClickLayouts) { Chevron() }
                         MuninnRowItem(stringResource(R.string.settings_screen_toolbar), stringResource(R.string.muninn_toolbar_description),
                             icon = R.drawable.ic_settings_toolbar, divider = false, onClick = onClickToolbar) { Chevron() }
@@ -275,8 +275,6 @@ fun MuninnMemoryScreen(onClickBack: () -> Unit, onClickClipboardSettings: () -> 
                 MuninnDivider()
                 MuninnPrefSwitch(Settings.PREF_MUNINN_SKIP_SENSITIVE, Defaults.PREF_MUNINN_SKIP_SENSITIVE,
                     stringResource(R.string.muninn_skip_passwords), stringResource(R.string.muninn_skip_passwords_sub))
-                MuninnPrefSwitch(Settings.PREF_MUNINN_EXPIRE_CODES, Defaults.PREF_MUNINN_EXPIRE_CODES,
-                    stringResource(R.string.muninn_codes_expire), stringResource(R.string.muninn_codes_expire_sub))
                 MuninnPrefSwitch(Settings.PREF_MUNINN_KEEP_DELETED, Defaults.PREF_MUNINN_KEEP_DELETED,
                     stringResource(R.string.muninn_keep_deleted_30), stringResource(R.string.muninn_keep_deleted_30_sub))
                 ScreenshotsSwitch()

@@ -91,12 +91,7 @@ class ClipboardHistoryManager(
             val content = clipItem.coerceToText(latinIME)
             if (TextUtils.isEmpty(content)) return
             val text = content.toString()
-            // Muninn: one-time codes delete themselves
-            // one-time codes are always hidden; "Codes delete themselves" decides whether they also go after 10 minutes
-            val expiresAt = if (!MuninnClips.isOneTimeCode(text)) null
-                else if (settings.mMuninnExpireCodes) System.currentTimeMillis() + MuninnClips.CODE_LIFETIME_MS
-                else MuninnClips.CODE_KEPT
-            clipboardDao?.addClip(timeStamp, false, text, source, expiresAt)
+            clipboardDao?.addClip(timeStamp, false, text, source)
         } else if (maySaveFromUri(clipItem.uri, latinIME)) {
             clipboardDao?.addClipUri(timeStamp, false, clipItem.uri, description, latinIME, source)
         }

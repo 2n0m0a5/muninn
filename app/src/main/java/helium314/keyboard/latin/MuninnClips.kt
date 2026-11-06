@@ -5,35 +5,8 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.text.format.DateUtils
 
-/** Muninn: small helpers for the cache (clip history): one-time code detection, app names and the line under each clip. */
+/** Muninn: small helpers for the cache (clip history): link detection, app names and the line under each clip. */
 object MuninnClips {
-    /** how long a one-time code stays in the cache */
-    const val CODE_LIFETIME_MS = 10 * 60 * 1000L
-
-    // Deliberately strict, because a match makes a clip delete itself:
-    //   482913, 48291375        6 to 8 digits on their own
-    //   482 913, 482-913        6 digits in two groups of 3
-    //   G-482913, AB-4829       up to 3 letters, a dash, then 4 to 8 digits
-    // Prices (15000), years (2026), phone numbers and card numbers don't match.
-    private val codePatterns = listOf(
-        Regex("""\d{6,8}"""),
-        Regex("""\d{3}[ -]\d{3}"""),
-        Regex("""[A-Za-z]{1,3}-\d{4,8}"""),
-    )
-
-    // a whole message with a code in it: "Your code is 482913", "Код: 4829", "رمز التحقق 482913"
-    private val codeWords = Regex("""(?i)(code|otp|passcode|pin\b|verif|one[- ]time|login|sign[- ]in|код|пароль|подтвержд|رمز|كود|التحقق|vérification|connexion)""")
-    private val codeInMessage = Regex("""(?<![\d.,-])(\d{5,8}|\d{3}[ -]\d{3}|(?!19|20)\d{4})(?![\d,-]|\.\d)|\b[A-Za-z]{1,3}-\d{4,8}\b""")
-
-    fun isOneTimeCode(text: String): Boolean {
-        val t = text.trim()
-        if (t.length <= 12) return codePatterns.any { it.matches(t) }
-        return t.length <= 220 && codeWords.containsMatchIn(t) && codeInMessage.containsMatchIn(t)
-    }
-
-    /** a code that is masked but not deleted (when "Codes delete themselves" is off) */
-    const val CODE_KEPT = Long.MAX_VALUE
-
     private val linkPattern = Regex("""^(https?://|www\.)\S+$""", RegexOption.IGNORE_CASE)
     private val linkInText = Regex("""(https?://|www\.)[^\s<>"]+""", RegexOption.IGNORE_CASE)
 
@@ -88,17 +61,8 @@ object MuninnClips {
         if (tags) entry.tags.forEach { parts.add(tagLabel(context, it)) }
         appLabel(context, entry.source)?.let { parts.add(it) }
         val deletedAt = entry.deletedAt
-        val expiresAt = entry.expiresAt
-        when {
-            deletedAt != null -> parts.add(context.getString(R.string.muninn_clip_deleted_ago, relative(deletedAt, now)))
-            expiresAt == CODE_KEPT -> parts.add(0, context.getString(R.string.muninn_clip_code))
-            expiresAt != null -> {
-                val minutes = ((expiresAt - now) / 60_000L).coerceAtLeast(1)
-                parts.add(0, context.getString(R.string.muninn_clip_code))
-                parts.add(context.resources.getQuantityString(R.plurals.muninn_clip_code_expires, minutes.toInt(), minutes.toInt()))
-            }
-            else -> parts.add(relative(entry.timeStamp, now))
-        }
+        if (deletedAt != null) parts.add(context.getString(R.string.muninn_clip_deleted_ago, relative(deletedAt, now)))
+        else parts.add(relative(entry.timeStamp, now))
         val remindAt = entry.remindAt
         if (remindAt != null && deletedAt == null)
             parts.add(context.getString(R.string.muninn_reminder_meta, MuninnReminders.describeTime(context, remindAt, now)))

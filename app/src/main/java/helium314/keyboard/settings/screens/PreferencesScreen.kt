@@ -174,9 +174,6 @@ fun createPreferencesSettings(context: Context) = listOf(
     Setting(context, Settings.PREF_MUNINN_SKIP_SENSITIVE, R.string.muninn_skip_sensitive, R.string.muninn_skip_sensitive_summary) {
         SwitchPreference(it, Defaults.PREF_MUNINN_SKIP_SENSITIVE)
     },
-    Setting(context, Settings.PREF_MUNINN_EXPIRE_CODES, R.string.muninn_expire_codes, R.string.muninn_expire_codes_summary) {
-        SwitchPreference(it, Defaults.PREF_MUNINN_EXPIRE_CODES)
-    },
     Setting(context, Settings.PREF_MUNINN_LOCK_CACHE, R.string.muninn_lock_cache, R.string.muninn_lock_cache_summary) {
         SwitchPreference(it, Defaults.PREF_MUNINN_LOCK_CACHE)
     },

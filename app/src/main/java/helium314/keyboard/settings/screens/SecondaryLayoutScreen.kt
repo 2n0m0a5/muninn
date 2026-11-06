@@ -38,8 +38,9 @@ fun SecondaryLayoutScreen(
     // could be added later, but need to decide how to do it (showing all main layouts is too much)
     SearchSettingsScreen(
         onClickBack = onClickBack,
-        title = stringResource(R.string.settings_screen_secondary_layouts),
-        settings = LayoutType.entries.filter { it != LayoutType.MAIN }.map { Settings.PREF_LAYOUT_PREFIX + it.name }
+        title = stringResource(R.string.muninn_secondary_layouts_title),
+        settings = LayoutType.entries.filter { it != LayoutType.MAIN }.map { Settings.PREF_LAYOUT_PREFIX + it.name },
+        intro = stringResource(R.string.muninn_secondary_layouts_intro),
     )
 }
 

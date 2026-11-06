@@ -36,7 +36,9 @@
     <string name="muninn_group_more">More</string>
     <string name="muninn_appearance_description">Theme, colors, key shape, keyboard height</string>
     <string name="muninn_preferences_description">Keys, sound, vibration, clipboard</string>
-    <string name="muninn_secondary_layouts_description">Symbols, numbers, number row, arrow pad and other extra keyboards</string>
+    <string name="muninn_secondary_layouts_title">Symbol &amp; number pages</string>
+    <string name="muninn_secondary_layouts_description">The ?123 page, the number pad, the phone pad: swap one for another version</string>
+    <string name="muninn_secondary_layouts_intro">Besides the letters, Muninn has other pages: the ?123 symbols page, the number pad that opens in number fields, the phone pad, the number row and a few more. Here each one can be swapped for another version, or for one you write yourself. Most people never need this.</string>
     <!-- Preferences: arrow-pad key -->
     <string name="muninn_show_dpad_key">Arrow pad key</string>
     <string name="muninn_show_dpad_key_summary">Show the four-arrow key next to the space bar on the symbols keyboard. Tap it for arrow keys, or hold and slide to pick one.</string>
@@ -94,7 +96,7 @@
     <string name="muninn_dictionaries_description">Word lists for each language, your own words</string>
     <string name="muninn_cache_row_description">Everything you copied, searchable</string>
     <string name="muninn_clipboard_settings">Clipboard settings</string>
-    <string name="muninn_clipboard_settings_description">Skip passwords, codes, Deleted</string>
+    <string name="muninn_clipboard_settings_description">Skip passwords, Recently deleted</string>
     <string name="muninn_reminders">Reminders</string>
     <string name="muninn_reminders_description">How strongly Muninn brings things back, quiet hours</string>
     <string name="muninn_share_to">Share to Muninn</string>
@@ -505,7 +507,7 @@ Afterwards Muninn restarts by itself, and swipe typing is on.</string>
     <string name="muninn_app_theme_light">Light</string>
     <string name="muninn_app_theme_dark">Dark</string>
     <string name="muninn_gesture_off">Swipe to type is off. Turn it on in Typing, and its settings show up here.</string>
-    <string name="muninn_guard_check_battery_hyperos">Set Battery saver to “No restrictions”. HyperOS does not let apps check it, so tick it when done.</string>
+    <string name="muninn_guard_check_battery_hyperos">Open it and choose “No restrictions”. If HyperOS doesn’t tell Muninn by itself, tap “I did it” when you’re back.</string>
     <string name="muninn_guard_check_autostart_ok">Allowed. Tap to check again.</string>
     <string name="muninn_guard_did_it">Done</string>
     <string name="muninn_share_keep_open">Keep open</string>
@@ -529,6 +531,7 @@ Afterwards Muninn restarts by itself, and swipe typing is on.</string>
     <string name="muninn_voice_unavailable">This phone has no speech service for voice typing</string>
     <string name="muninn_translate_getting">Getting %1$s → %2$s (once, then offline)…</string>
     <string name="muninn_translate_type_in">Type in %s</string>
+    <string name="muninn_translate_unavailable">Translation isn’t available on this phone right now</string>
     <string name="muninn_translate_no_model">Translation isn’t available right now. Check the internet for the first download.</string>
     <string name="muninn_translate_pair">Languages: tap for another target, hold to swap</string>
     <string name="muninn_translate_keep">Keep the translation</string>

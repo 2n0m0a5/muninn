@@ -13,8 +13,8 @@ android {
         applicationId = "app.muninn.keyboard"
         minSdk = 21
         targetSdk = 37
-        versionCode = 14
-        versionName = "0.10.0"
+        versionCode = 15
+        versionName = "0.10.1"
         ndk {
             abiFilters.clear()
             abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64"))

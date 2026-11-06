@@ -44,7 +44,8 @@ class ClipboardHistoryEntry(
     /** Muninn: has a reminder that is due */
     fun isDue(now: Long) = remindAt.let { it != null && it <= now } && deletedAt == null
     /** Muninn: one-time codes are shown hidden and delete themselves */
-    val isCode get() = expiresAt != null
+    /** Muninn 0.10.1: code detection was taken out (it caught too little to be trusted); links are detected instead */
+    val isCode get() = false
 
     // for display order
     override fun compareTo(other: ClipboardHistoryEntry): Int {

@@ -184,15 +184,12 @@ fun MuninnGuardScreen(onClickBack: () -> Unit) {
                     else ctx.startActivity(Intent(SystemSettings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + ctx.packageName)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                 }
                 if (isXiaomiFamily()) {
-                    // Battery: Android's own "run in the background" permission, which apps can read (HyperOS honours it);
-                    // HyperOS's separate battery saver list can't be read, so it is offered as a shortcut, not a check.
-                    CheckRow(battery, stringResource(R.string.muninn_guard_check_battery),
-                        stringResource(if (battery) R.string.muninn_guard_check_battery_ok else R.string.muninn_guard_check_battery_fix)) {
+                    // Battery: one row. HyperOS sends both Android's battery question and its own battery saver to the same page
+                    // (Muninn's battery details, where "No restrictions" is). Some HyperOS versions then report it to Android
+                    // (checked by itself); others keep it private, so after choosing it you confirm with one tap.
+                    ManualCheckRow(battery, "muninn_guard_battery_done", stringResource(R.string.muninn_guard_check_battery),
+                        stringResource(R.string.muninn_guard_check_battery_hyperos), stringResource(R.string.muninn_guard_check_battery_ok)) {
                         requestBattery(ctx)
-                    }
-                    MuninnRowItem(stringResource(R.string.muninn_guard_hyperos_saver), stringResource(R.string.muninn_guard_hyperos_saver_sub),
-                        onClick = { openHyperOsBattery(ctx) }) {
-                        OutlineButton(stringResource(R.string.muninn_open), height = 36.dp) { openHyperOsBattery(ctx) }
                     }
                     // Autostart: read through MIUI's private app-op, the same way other apps check it
                     val autostart = remember(tick) { MuninnGuard.xiaomiAutostartAllowed(ctx) }

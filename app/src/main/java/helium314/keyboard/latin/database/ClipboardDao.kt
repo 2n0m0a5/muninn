@@ -328,11 +328,9 @@ class ClipboardDao private constructor(private val db: Database) {
     /** live clips with a reminder, soonest first */
     fun withReminders(): List<ClipboardHistoryEntry> = cache.filter { it.remindAt != null }.sortedBy { it.remindAt }
 
-    /** one-time codes past their time, and clips deleted more than [TRASH_DAYS] days ago */
+    /** clips deleted more than [TRASH_DAYS] days ago */
     private fun removeExpired() {
         val now = System.currentTimeMillis()
-        val expiredCodes = cache.filter { it.expiresAt != null && it.expiresAt < now }
-        if (expiredCodes.isNotEmpty()) delete(expiredCodes)
         val trashLimit = now - TRASH_DAYS * 24 * 60 * 60 * 1000L
         val oldTrash = trash.filter { (it.deletedAt ?: now) < trashLimit }
         if (oldTrash.isNotEmpty()) deleteForever(oldTrash)

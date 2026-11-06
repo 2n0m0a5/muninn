@@ -120,7 +120,6 @@ private enum class CacheFilter(@StringRes val label: Int) {
     COMING_BACK(R.string.muninn_filter_coming_back),
     PINNED(R.string.muninn_tab_pinned),
     LINKS(R.string.muninn_filter_links),
-    CODES(R.string.muninn_filter_codes),
     TRASH(R.string.muninn_tab_trash),
 }
 
@@ -173,7 +172,6 @@ private fun CacheContent(onClickBack: () -> Unit) {
             CacheFilter.COMING_BACK -> dao.withReminders()
             CacheFilter.PINNED -> dao.getAll().filter { it.isPinned }
             CacheFilter.LINKS -> dao.getAll().filter { MuninnClips.hasLink(it.text) }
-            CacheFilter.CODES -> dao.getAll().filter { it.isCode }
             CacheFilter.TRASH -> dao.getTrash()
         }.toList().let { list -> if (tagFilter.isEmpty()) list else list.filter { clip -> tagFilter.all { it in clip.tags } } }
         val q = query.trim()

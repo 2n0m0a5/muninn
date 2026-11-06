@@ -78,7 +78,15 @@ class MuninnTranslate(private val ime: LatinIME) {
         translator?.close()
         ready = false
         box?.hint = ime.getString(R.string.muninn_translate_getting, name(source), name(target))
-        val t = Translation.getClient(TranslatorOptions.Builder().setSourceLanguage(source).setTargetLanguage(target).build())
+        // never let the translation library take the keyboard down: if it fails, the bar says so and typing goes on
+        val t = try {
+            Translation.getClient(TranslatorOptions.Builder().setSourceLanguage(source).setTargetLanguage(target).build())
+        } catch (e: Throwable) {
+            Log.w(TAG, "can't create translator", e)
+            translator = null
+            box?.hint = ime.getString(R.string.muninn_translate_unavailable)
+            return
+        }
         translator = t
         t.downloadModelIfNeeded(DownloadConditions.Builder().build())
             .addOnSuccessListener {
@@ -134,7 +142,8 @@ class MuninnTranslate(private val ime: LatinIME) {
         val t = translator ?: return
         if (!ready) return
         val id = ++request
-        t.translate(text).addOnSuccessListener { result ->
+        val task = try { t.translate(text) } catch (e: Throwable) { Log.w(TAG, "translation failed", e); return }
+        task.addOnSuccessListener { result ->
             if (id != request || !active) return@addOnSuccessListener
             // the translation sits in the app's field as composing text, replaced each time, until kept
             ime.realInputConnection()?.setComposingText(result, 1)
@@ -148,8 +157,9 @@ class MuninnTranslate(private val ime: LatinIME) {
         // translate what is in the box one last time before keeping it
         val text = box?.text?.toString().orEmpty()
         val t = translator
-        if (text.isNotBlank() && t != null && ready) {
-            t.translate(text).addOnSuccessListener { result ->
+        val task = if (text.isNotBlank() && t != null && ready) try { t.translate(text) } catch (e: Throwable) { null } else null
+        if (task != null) {
+            task.addOnSuccessListener { result ->
                 ime.realInputConnection()?.apply { setComposingText(result, 1); finishComposingText() }
                 close()
             }.addOnFailureListener { close() }
