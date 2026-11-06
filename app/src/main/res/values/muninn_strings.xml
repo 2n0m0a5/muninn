@@ -446,4 +446,20 @@
     <string name="muninn_other_keyboard_text">%s took over. Your cache is safe.</string>
     <string name="muninn_guard_switched_off">Muninn is switched off</string>
     <string name="muninn_guard_turn_on">Turn on Muninn</string>
+
+    <!-- Muninn 0.7.0, Layer 5: Share to Muninn -->
+    <string name="muninn_share_label">Muninn</string>
+    <string name="muninn_keep_text_label">Keep in Muninn</string>
+    <string name="muninn_share_nothing">Nothing to keep here</string>
+    <string name="muninn_share_kept">Kept</string>
+    <string name="muninn_share_kept_text">Muninn will hold it for you</string>
+    <string name="muninn_share_from">From %s · just now</string>
+    <string name="muninn_share_tag_it">Tag it</string>
+    <string name="muninn_share_bring_back">Bring it back</string>
+    <string name="muninn_remind_weekend">Weekend</string>
+    <string name="muninn_share_just_keep">Just keep it</string>
+    <string name="muninn_share_closes_in">Closes by itself in %d seconds. It is already saved.</string>
+    <string name="muninn_share_saved_already">It is already saved. Done adds the tags and the reminder.</string>
+    <string name="muninn_how_share">Share anything to Muninn</string>
+    <string name="muninn_how_share_does">from TikTok, YouTube, Instagram, or “Keep in Muninn” on selected text</string>
 </resources>

@@ -455,6 +455,7 @@ private fun HowMuninnWorks() {
         if (open) {
             Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 6.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 HowRow(R.drawable.ic_muninn_feather_small, R.string.muninn_how_copy, stringResource(R.string.muninn_how_copy_does), gold = true)
+                HowRow(R.drawable.ic_muninn_share, R.string.muninn_how_share, stringResource(R.string.muninn_how_share_does), gold = true)
                 HowRow(R.drawable.ic_arrow_horizontal, R.string.muninn_how_swipe_space, stringResource(R.string.muninn_how_swipe_space_does))
                 HowRow(R.drawable.ic_settings_gesture, R.string.muninn_how_hold_space, stringResource(R.string.muninn_how_hold_space_does))
                 HowRow(R.drawable.ic_muninn_pin, R.string.muninn_how_hold_clip, stringResource(R.string.muninn_how_hold_clip_does))

@@ -73,6 +73,25 @@ class MuninnScreenshots {
         shoot("cache_clips") { MuninnCacheScreen {} }
         shoot("home_clips", 1240) { MainSettingsScreen({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}) }
     }
+    @Test fun share() {
+        Assume.assumeTrue(out != null)
+        val intent = android.content.Intent(android.content.Intent.ACTION_SEND).setType("text/plain")
+            .putExtra(android.content.Intent.EXTRA_TEXT, "10-minute stretch for people who sit all day https://vm.tiktok.com/ZM123/")
+        val activity = Robolectric.buildActivity(MuninnShareActivity::class.java, intent).setup().get()
+        shadowOf(Looper.getMainLooper()).idle()
+        val view = activity.window.decorView
+        val density = activity.resources.displayMetrics.density
+        val w = (392 * density).toInt(); val h = (870 * density).toInt()
+        view.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(h, View.MeasureSpec.EXACTLY))
+        view.layout(0, 0, w, h)
+        shadowOf(Looper.getMainLooper()).idle()
+        val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        canvas.drawColor(0xFF2B3B58.toInt()) // stands in for the app you shared from
+        view.draw(canvas)
+        File(out!!).mkdirs()
+        File(out, "share.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+    }
     @Test fun welcome() = shoot("welcome") { WelcomeWizard({}, {}) }
     @Test fun guard() = shoot("guard", 1100) { helium314.keyboard.settings.screens.MuninnGuardScreen {} }
 }

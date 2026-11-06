@@ -15,7 +15,9 @@ object MuninnReminderTimes {
     const val TONIGHT_HOUR = 19
     const val MORNING_HOUR = 9
 
-    enum class Preset { IN_ONE_HOUR, TONIGHT, TOMORROW_MORNING, NEXT_WEEK }
+    const val WEEKEND_HOUR = 10
+
+    enum class Preset { IN_ONE_HOUR, TONIGHT, TOMORROW_MORNING, NEXT_WEEK, WEEKEND }
 
     private fun cal(now: Long, tz: TimeZone) = Calendar.getInstance(tz).apply { timeInMillis = now }
 
@@ -35,6 +37,11 @@ object MuninnReminderTimes {
         }
         Preset.TOMORROW_MORNING -> cal(now, tz).apply { add(Calendar.DAY_OF_MONTH, 1) }.atHour(MORNING_HOUR).timeInMillis
         Preset.NEXT_WEEK -> cal(now, tz).apply { add(Calendar.DAY_OF_MONTH, 7) }.atHour(MORNING_HOUR).timeInMillis
+        // the coming Saturday at 10:00 (on a weekend that is already under way, next Saturday)
+        Preset.WEEKEND -> cal(now, tz).atHour(WEEKEND_HOUR).let {
+            while (it.get(Calendar.DAY_OF_WEEK) != Calendar.SATURDAY || it.timeInMillis - now < HOUR) it.add(Calendar.DAY_OF_MONTH, 1)
+            it.timeInMillis
+        }
     }
 
     /** whether [time] falls in quiet hours [start]..[end] (hours of the day, may wrap past midnight, e.g. 23..8) */

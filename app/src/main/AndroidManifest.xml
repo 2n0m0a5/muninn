@@ -119,6 +119,31 @@ SPDX-License-Identifier: Apache-2.0 AND GPL-3.0-only
             </intent-filter>
         </receiver>
 
+        <!-- Muninn, Layer 5: "Share to Muninn" from any app, and "Keep in Muninn" on selected text -->
+        <activity android:name="helium314.keyboard.settings.MuninnShareActivity"
+            android:exported="true"
+            android:label="@string/muninn_share_label"
+            android:icon="@mipmap/ic_launcher"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:theme="@style/MuninnShareTheme">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
+        <activity-alias android:name="helium314.keyboard.settings.MuninnKeepTextActivity"
+            android:targetActivity="helium314.keyboard.settings.MuninnShareActivity"
+            android:exported="true"
+            android:label="@string/muninn_keep_text_label">
+            <intent-filter>
+                <action android:name="android.intent.action.PROCESS_TEXT" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity-alias>
+
         <!-- Muninn Guard (Layer 4): wakes when the default keyboard changes; the notification's buttons; the keyboard picker -->
         <service android:name="MuninnGuardJobService"
             android:permission="android.permission.BIND_JOB_SERVICE"
