@@ -91,6 +91,8 @@ class ClipboardHistoryView @JvmOverloads constructor(
             itemBackgroundId = keyBackgroundId
             pinnedIconResId = pinIconId
             onCacheChanged = { refreshCacheView() }
+            onPinChanged = { pinned -> feedback(if (pinned) R.string.muninn_pinned else R.string.muninn_unpinned); updateTabs() }
+            onDeletedForever = { feedback(R.string.muninn_deleted_forever) }
         }
         setupTabs()
         placeholderView = findViewById(R.id.clipboard_empty_view)
@@ -212,7 +214,6 @@ class ClipboardHistoryView @JvmOverloads constructor(
                 keyboardActionListener.onReleaseKey(KeyCode.NOT_SPECIFIED, false)
                 clipboardHistoryManager.cacheView = view
                 refreshCacheView()
-                clipboardRecyclerView.scrollToPosition(0)
             }
         }
         emptyTrashView.setOnClickListener {
@@ -222,9 +223,20 @@ class ClipboardHistoryView @JvmOverloads constructor(
         }
     }
 
+    /** Muninn: feel it (vibration), hear it (key sound, if on) and see it (a short message) */
+    private fun feedback(message: Int) {
+        keyboardActionListener.onPressKey(KeyCode.NOT_SPECIFIED, 0, 1, HapticEvent.KEY_LONG_PRESS)
+        keyboardActionListener.onReleaseKey(KeyCode.NOT_SPECIFIED, false)
+        android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_SHORT).show()
+    }
+
     private fun refreshCacheView() {
         if (!this::clipboardAdapter.isInitialized || !::clipboardHistoryManager.isInitialized) return
-        clipboardAdapter.notifyDataSetChanged()
+        // Setting the adapter again makes the list re-measure everything. A plain notifyDataSetChanged could leave the
+        // staggered grid empty after coming back from an empty tab (reported on 0.2.0).
+        clipboardRecyclerView.adapter = null
+        clipboardRecyclerView.adapter = clipboardAdapter
+        clipboardRecyclerView.requestLayout()
         updateTabs()
     }
 
@@ -234,9 +246,18 @@ class ClipboardHistoryView @JvmOverloads constructor(
         val selectedColor = colors.get(ColorType.CLIPBOARD_PIN)
         val otherColor = colors.get(ColorType.KEY_HINT_TEXT)
         val current = clipboardHistoryManager.cacheView
+        val density = resources.displayMetrics.density
+        // readable text on the gold pill: dark on light accents, white on dark ones
+        val onSelected = if (androidx.core.graphics.ColorUtils.calculateLuminance(selectedColor) > 0.45) 0xFF1A1405.toInt() else 0xFFFFFFFF.toInt()
         tabViews.forEach { (view, tab) ->
-            tab.setTextColor(if (view == current) selectedColor else otherColor)
-            tab.setTypeface(tab.typeface, if (view == current) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
+            val isCurrent = view == current
+            tab.setTextColor(if (isCurrent) onSelected else otherColor)
+            tab.setTypeface(null, if (isCurrent) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
+            // Muninn: pills, gold for the open tab, like the cache screen in the app
+            tab.background = android.graphics.drawable.InsetDrawable(android.graphics.drawable.GradientDrawable().apply {
+                cornerRadius = 100 * density
+                setColor(if (isCurrent) selectedColor else colors.get(ColorType.KEY_BACKGROUND))
+            }, 0, (4 * density).toInt(), (6 * density).toInt(), (4 * density).toInt())
         }
         val pinned = clipboardHistoryManager.pinnedCount()
         val trash = clipboardHistoryManager.trashCount()
@@ -283,6 +304,7 @@ class ClipboardHistoryView @JvmOverloads constructor(
             clipboardHistoryManager.restoreClip(clipId)
             keyboardActionListener.onReleaseKey(KeyCode.NOT_SPECIFIED, false)
             refreshCacheView()
+            feedback(R.string.muninn_restored)
             return
         }
         val clipContent = clipboardHistoryManager.getHistoryEntryContent(clipId)

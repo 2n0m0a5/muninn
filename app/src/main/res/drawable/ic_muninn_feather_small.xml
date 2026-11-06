@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Muninn feather as a one-colour icon (tinted where it is used) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp" android:viewportWidth="100" android:viewportHeight="100">
+  <group android:pivotX="50" android:pivotY="50" android:rotation="18" android:translateX="30">
+    <path android:fillColor="#FF000000"
+        android:pathData="M20,2 C34,14 37,40 30,64 C27,74 23,84 20,98 C17,84 13,74 10,64 C3,40 6,14 20,2 Z"/>
+  </group>
+</vector>

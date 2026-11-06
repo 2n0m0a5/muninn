@@ -36,13 +36,13 @@ jobs:
           MUNINN_KEYSTORE_PASSWORD: ${{ secrets.MUNINN_KEYSTORE_PASSWORD }}
           MUNINN_KEY_ALIAS: ${{ secrets.MUNINN_KEY_ALIAS }}
           MUNINN_KEY_PASSWORD: ${{ secrets.MUNINN_KEY_PASSWORD }}
-        run: chmod +x gradlew && ./gradlew assembleDebug
+        run: chmod +x gradlew && ./gradlew assembleRelease
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Muninn-debug
-          path: app/build/outputs/apk/debug/*-debug*.apk
+          name: Muninn
+          path: app/build/outputs/apk/release/*-release*.apk
 
       - name: Archive reports for failed job
         uses: actions/upload-artifact@v4

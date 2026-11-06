@@ -3,6 +3,8 @@
 package helium314.keyboard.keyboard.clipboard
 
 import android.annotation.SuppressLint
+import android.graphics.drawable.GradientDrawable
+import android.os.Build
 import android.graphics.Typeface
 import android.util.TypedValue
 import android.view.LayoutInflater
@@ -28,6 +30,12 @@ class ClipboardAdapter(
 
     /** Muninn: called when the shown list changed in a way the panel can't follow item by item */
     var onCacheChanged: () -> Unit = { notifyDataSetChanged() }
+
+    /** Muninn: called after a clip was pinned (true) or unpinned (false), for haptic, sound and a short message */
+    var onPinChanged: (Boolean) -> Unit = { }
+
+    /** Muninn: called after a deleted clip was removed for good */
+    var onDeletedForever: () -> Unit = { }
 
     var pinnedIconResId = 0
     var itemBackgroundId = 0
@@ -102,6 +110,14 @@ class ClipboardAdapter(
             val meta = MuninnClips.metaLine(itemView.context, historyEntry)
             metaTextView.text = if (inTrash) meta + " · " + itemView.context.getString(R.string.muninn_trash_hint) else meta
             pinnedIconView.visibility = if (historyEntry.isPinned) View.VISIBLE else View.GONE
+            // Muninn: pinned clips get a gold outline, so they stand out at a glance
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                itemView.foreground = if (historyEntry.isPinned) GradientDrawable().apply {
+                    val density = itemView.resources.displayMetrics.density
+                    cornerRadius = 10 * density
+                    setStroke((2 * density).toInt(), Settings.getValues().mColors.get(ColorType.CLIPBOARD_PIN))
+                } else null
+            }
             contentImageView.visibility = if (historyEntry.filename != null) View.VISIBLE else View.GONE
             contentTextView.visibility = if (contentTextView.text.isNullOrEmpty()) View.GONE else View.VISIBLE
         }
@@ -124,9 +140,11 @@ class ClipboardAdapter(
                 // Muninn: in Recently deleted, holding a clip deletes it for good
                 manager.deleteClipForever(view.tag as Long)
                 onCacheChanged()
+                onDeletedForever()
             } else {
                 manager.toggleClipPinned(view.tag as Long)
                 if (manager.cacheView != ClipboardHistoryManager.CacheView.ALL) onCacheChanged()
+                onPinChanged(manager.getHistoryEntryContent(view.tag as Long)?.isPinned == true)
             }
             return true
         }

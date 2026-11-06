@@ -2,6 +2,11 @@
 package helium314.keyboard.settings.screens
 
 import android.content.Context
+import androidx.annotation.DrawableRes
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.text.style.TextOverflow
+import kotlinx.coroutines.delay
 import android.view.inputmethod.InputMethodManager
 import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
@@ -105,74 +110,53 @@ fun MainSettingsScreen(
                 PopularSettings()
 
                 Group(R.string.muninn_group_typing, R.string.muninn_group_typing_raven) {
-                    Preference(
-                        name = stringResource(R.string.language_and_layouts_title),
-                        description = enabledSubtypes.joinToString(", ") { it.displayName() },
-                        onClick = onClickLanguage,
-                        icon = R.drawable.ic_settings_languages
-                    ) { NextScreenIcon() }
-                    Preference(
-                        name = stringResource(R.string.settings_screen_correction),
-                        onClick = onClickTextCorrection,
-                        icon = R.drawable.ic_settings_correction
-                    ) { NextScreenIcon() }
+                    MuninnRow(R.drawable.ic_settings_languages, stringResource(R.string.language_and_layouts_title),
+                        enabledSubtypes.joinToString(", ") { it.displayName() }, onClick = onClickLanguage)
+                    MuninnRow(R.drawable.ic_settings_correction, stringResource(R.string.settings_screen_correction),
+                        stringResource(R.string.muninn_correction_description), onClick = onClickTextCorrection)
                     if (JniUtils.sHaveGestureLib)
-                        Preference(
-                            name = stringResource(R.string.settings_screen_gesture),
-                            onClick = onClickGestureTyping,
-                            icon = R.drawable.ic_settings_gesture
-                        ) { NextScreenIcon() }
-                    Preference(
-                        name = stringResource(R.string.dictionary_settings_category),
-                        onClick = onClickDictionaries,
-                        icon = R.drawable.ic_dictionary
-                    ) { NextScreenIcon() }
-                    Preference(
-                        name = stringResource(R.string.settings_screen_secondary_layouts),
-                        description = stringResource(R.string.muninn_secondary_layouts_description),
-                        onClick = onClickLayouts,
-                        icon = R.drawable.ic_settings_layout
-                    ) { NextScreenIcon() }
+                        MuninnRow(R.drawable.ic_settings_gesture, stringResource(R.string.settings_screen_gesture), null, onClick = onClickGestureTyping)
+                    MuninnRow(R.drawable.ic_dictionary, stringResource(R.string.dictionary_settings_category),
+                        stringResource(R.string.muninn_dictionaries_description), onClick = onClickDictionaries)
+                    MuninnRow(R.drawable.ic_settings_layout, stringResource(R.string.settings_screen_secondary_layouts),
+                        stringResource(R.string.muninn_secondary_layouts_description), onClick = onClickLayouts, last = true)
+                }
+
+                Group(R.string.muninn_group_memory, R.string.muninn_group_memory_raven, gold = true) {
+                    MuninnRow(R.drawable.ic_muninn_feather_small, stringResource(R.string.muninn_cache_title),
+                        stringResource(R.string.muninn_cache_row_description), gold = true, onClick = onClickCache)
+                    MuninnRow(R.drawable.ic_muninn_clipboard, stringResource(R.string.muninn_clipboard_settings),
+                        stringResource(R.string.muninn_clipboard_settings_description), gold = true, onClick = onClickPreferences)
+                    MuninnRow(R.drawable.ic_muninn_bell, stringResource(R.string.muninn_reminders),
+                        stringResource(R.string.muninn_reminders_description), gold = true, soon = true)
+                    MuninnRow(R.drawable.ic_muninn_share, stringResource(R.string.muninn_share_to),
+                        stringResource(R.string.muninn_share_to_description), gold = true, soon = true, last = true)
                 }
 
                 Group(R.string.muninn_group_look) {
-                    Preference(
-                        name = stringResource(R.string.settings_screen_appearance),
-                        description = stringResource(R.string.muninn_appearance_description),
-                        onClick = onClickAppearance,
-                        icon = R.drawable.ic_settings_appearance
-                    ) { NextScreenIcon() }
-                    Preference(
-                        name = stringResource(R.string.settings_screen_preferences),
-                        description = stringResource(R.string.muninn_preferences_description),
-                        onClick = onClickPreferences,
-                        icon = R.drawable.ic_settings_preferences
-                    ) { NextScreenIcon() }
-                    Preference(
-                        name = stringResource(R.string.settings_screen_toolbar),
-                        onClick = onClickToolbar,
-                        icon = R.drawable.ic_settings_toolbar
-                    ) { NextScreenIcon() }
+                    MuninnRow(R.drawable.ic_settings_appearance, stringResource(R.string.settings_screen_appearance),
+                        stringResource(R.string.muninn_appearance_description), onClick = onClickAppearance)
+                    MuninnRow(R.drawable.ic_settings_preferences, stringResource(R.string.settings_screen_preferences),
+                        stringResource(R.string.muninn_preferences_description), onClick = onClickPreferences)
+                    MuninnRow(R.drawable.ic_settings_toolbar, stringResource(R.string.settings_screen_toolbar),
+                        stringResource(R.string.muninn_toolbar_description), onClick = onClickToolbar, last = true)
+                }
+
+                Group(R.string.muninn_group_protection) {
+                    MuninnRow(R.drawable.ic_muninn_shield, stringResource(R.string.muninn_guard),
+                        stringResource(R.string.muninn_guard_description), soon = true)
+                    MuninnRow(R.drawable.ic_muninn_lock, stringResource(R.string.muninn_privacy),
+                        stringResource(R.string.muninn_privacy_description), last = true)
                 }
 
                 Group(R.string.muninn_group_more) {
-                    Preference(
-                        name = stringResource(R.string.settings_screen_advanced),
-                        onClick = onClickAdvanced,
-                        icon = R.drawable.ic_settings_advanced
-                    ) { NextScreenIcon() }
+                    MuninnRow(R.drawable.ic_settings_advanced, stringResource(R.string.settings_screen_advanced),
+                        stringResource(R.string.muninn_advanced_description), onClick = onClickAdvanced)
                     // we don't even show the menu if data gathering phase ended more than 2 weeks ago
                     if (JniUtils.sHaveGestureLib && System.currentTimeMillis() < END_DATE_EPOCH_MILLIS + TWO_WEEKS_IN_MILLIS)
-                        Preference(
-                            name = stringResource(R.string.gesture_data_screen),
-                            onClick = onClickDataGathering,
-                            icon = R.drawable.ic_settings_gesture
-                        ) { NextScreenIcon() }
-                    Preference(
-                        name = stringResource(R.string.settings_screen_about),
-                        onClick = onClickAbout,
-                        icon = R.drawable.ic_settings_about
-                    ) { NextScreenIcon() }
+                        MuninnRow(R.drawable.ic_settings_gesture, stringResource(R.string.gesture_data_screen), null, onClick = onClickDataGathering)
+                    MuninnRow(R.drawable.ic_settings_about, stringResource(R.string.settings_screen_about),
+                        stringResource(R.string.muninn_about_description), onClick = onClickAbout, last = true)
                 }
 
                 Row(Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 96.dp), horizontalArrangement = Arrangement.Center) {
@@ -188,7 +172,14 @@ fun MainSettingsScreen(
 private fun MuninnHeader() {
     val ctx = LocalContext.current
     val imm = ctx.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-    val active = UncachedInputMethodManagerUtils.isThisImeCurrent(ctx, imm)
+    // Muninn: check again every second, so switching keyboards (even from the picker on this screen) shows right away
+    var active by remember { mutableStateOf(UncachedInputMethodManagerUtils.isThisImeCurrent(ctx, imm)) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            active = UncachedInputMethodManagerUtils.isThisImeCurrent(ctx, imm)
+            delay(1000)
+        }
+    }
     Row(
         Modifier.fillMaxWidth().padding(start = 6.dp, end = 6.dp, top = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -198,7 +189,9 @@ private fun MuninnHeader() {
         Text("muninn", fontFamily = MuninnSerif, fontSize = 46.sp, lineHeight = 46.sp, color = MaterialTheme.colorScheme.onSurface)
         Spacer(Modifier.weight(1f))
         Row(
-            Modifier.clip(RoundedCornerShape(50)).background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            Modifier.clip(RoundedCornerShape(50))
+                .background(if (active) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
+                .clickable { imm.showInputMethodPicker() } // tap to choose the keyboard
                 .padding(horizontal = 12.dp, vertical = 7.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -207,7 +200,7 @@ private fun MuninnHeader() {
             Text(
                 stringResource(if (active) R.string.muninn_status_active else R.string.muninn_status_not_active),
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = if (active) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary
             )
         }
     }
@@ -370,24 +363,79 @@ private fun ClipboardPicture() {
     }
 }
 
-/** A rounded card holding a group of settings, with a small heading above it */
+/** A rounded card holding a group of settings, with a small heading above it. Gold for Muninn's memory features. */
 @Composable
-private fun Group(@StringRes title: Int, @StringRes raven: Int? = null, content: @Composable ColumnScope.() -> Unit) {
+private fun Group(@StringRes title: Int, @StringRes raven: Int? = null, gold: Boolean = false, content: @Composable ColumnScope.() -> Unit) {
+    val headingColor = if (gold) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(Modifier.padding(start = 10.dp), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
                 stringResource(title).uppercase(),
                 style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 1.sp),
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = headingColor
             )
             if (raven != null)
-                Text(stringResource(raven), fontFamily = MuninnSerif, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(raven), fontFamily = MuninnSerif, fontSize = 16.sp, color = headingColor)
         }
         Column(
             Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(MaterialTheme.colorScheme.surfaceContainer)
-                .padding(vertical = 4.dp),
+                .then(if (gold) Modifier.border(BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)), RoundedCornerShape(22.dp)) else Modifier),
             content = content
         )
+    }
+}
+
+/**
+ * One settings row, as in the design: icon in a rounded tile, title, one line of description, arrow.
+ * [soon] rows are features from later layers: shown, dimmed, with a "Soon" label, and not tappable.
+ */
+@Composable
+private fun MuninnRow(
+    @DrawableRes icon: Int,
+    title: String,
+    description: String?,
+    gold: Boolean = false,
+    soon: Boolean = false,
+    last: Boolean = false,
+    onClick: (() -> Unit)? = null,
+) {
+    val accent = MaterialTheme.colorScheme.primary
+    Column {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .then(if (onClick != null && !soon) Modifier.clickable { onClick() } else Modifier)
+                .alpha(if (soon) 0.55f else 1f)
+                .padding(horizontal = 14.dp, vertical = 13.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Box(
+                Modifier.size(40.dp).clip(RoundedCornerShape(12.dp))
+                    .background(if (gold) accent.copy(alpha = 0.14f) else MaterialTheme.colorScheme.surfaceContainerHighest),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(painterResource(icon), null, Modifier.size(22.dp),
+                    tint = if (gold) accent else MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(title, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium))
+                if (description != null)
+                    Text(description, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2, overflow = TextOverflow.Ellipsis)
+            }
+            when {
+                soon -> Text(
+                    stringResource(R.string.muninn_soon),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = accent,
+                    modifier = Modifier.clip(RoundedCornerShape(50)).border(1.dp, accent.copy(alpha = 0.6f), RoundedCornerShape(50))
+                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                )
+                onClick != null -> NextScreenIcon()
+            }
+        }
+        if (!last) Box(Modifier.fillMaxWidth().padding(start = 68.dp).height(1.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)))
     }
 }
 

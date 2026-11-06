@@ -53,7 +53,9 @@ object MuninnClips {
 
     /** "Telegram · 5 min. ago", or for codes "Code · deletes itself in 8 min." */
     fun metaLine(context: Context, entry: ClipboardHistoryEntry, now: Long = System.currentTimeMillis()): String {
+        justNow = context.getString(R.string.muninn_just_now)
         val parts = mutableListOf<String>()
+        if (entry.isPinned) parts.add(context.getString(R.string.muninn_tab_pinned))
         appLabel(context, entry.source)?.let { parts.add(it) }
         val deletedAt = entry.deletedAt
         val expiresAt = entry.expiresAt
@@ -69,6 +71,9 @@ object MuninnClips {
         return parts.joinToString(" · ")
     }
 
+    private var justNow: String = "just now"
+
     private fun relative(time: Long, now: Long): String =
-        DateUtils.getRelativeTimeSpanString(time, now, DateUtils.MINUTE_IN_MILLIS, DateUtils.FORMAT_ABBREV_RELATIVE).toString()
+        if (now - time < DateUtils.MINUTE_IN_MILLIS) justNow
+        else DateUtils.getRelativeTimeSpanString(time, now, DateUtils.MINUTE_IN_MILLIS, DateUtils.FORMAT_ABBREV_RELATIVE).toString()
 }

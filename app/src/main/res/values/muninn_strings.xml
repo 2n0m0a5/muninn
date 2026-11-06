@@ -57,7 +57,7 @@
     <!-- The cache panel in the keyboard -->
     <string name="muninn_tab_all">All</string>
     <string name="muninn_tab_pinned">Pinned</string>
-    <string name="muninn_tab_trash">Recently deleted</string>
+    <string name="muninn_tab_trash">Deleted</string>
     <string name="muninn_empty_trash">Empty</string>
     <string name="muninn_trash_hint">tap to restore, hold to delete</string>
     <!-- The cache screen in the app -->
@@ -76,4 +76,34 @@
     <string name="muninn_cache_delete_forever">Delete forever</string>
     <string name="muninn_cache_restore">Restore</string>
     <string name="muninn_cache_copied">Copied</string>
+    <string name="muninn_just_now">just now</string>
+    <!-- Feedback after actions on clips -->
+    <string name="muninn_pinned">Pinned</string>
+    <string name="muninn_unpinned">Unpinned</string>
+    <string name="muninn_restored">Restored</string>
+    <string name="muninn_deleted_forever">Deleted for good</string>
+    <string name="muninn_moved_to_deleted">Moved to Deleted</string>
+    <string name="muninn_section_pinned">Pinned</string>
+    <string name="muninn_section_kept">Kept</string>
+    <!-- Settings home: groups and rows -->
+    <string name="muninn_group_memory">Memory</string>
+    <string name="muninn_group_memory_raven">Muninn</string>
+    <string name="muninn_group_protection">Protection</string>
+    <string name="muninn_soon">Soon</string>
+    <string name="muninn_correction_description">Autocorrect, suggestions, capital letters</string>
+    <string name="muninn_dictionaries_description">Word lists for each language, your own words</string>
+    <string name="muninn_cache_row_description">Everything you copied, searchable</string>
+    <string name="muninn_clipboard_settings">Clipboard settings</string>
+    <string name="muninn_clipboard_settings_description">Skip passwords, codes, Deleted</string>
+    <string name="muninn_reminders">Reminders</string>
+    <string name="muninn_reminders_description">How strongly Muninn brings things back, quiet hours</string>
+    <string name="muninn_share_to">Share to Muninn</string>
+    <string name="muninn_share_to_description">Save from TikTok, YouTube, Instagram</string>
+    <string name="muninn_toolbar_description">Which buttons show above the keys</string>
+    <string name="muninn_guard">Guard</string>
+    <string name="muninn_guard_description">Keep Muninn as your keyboard</string>
+    <string name="muninn_privacy">Privacy</string>
+    <string name="muninn_privacy_description">No internet access. Everything stays on this phone.</string>
+    <string name="muninn_advanced_description">Space bar gestures, long-press delay, and more</string>
+    <string name="muninn_about_description">Version, licence, Muninn on GitHub</string>
 </resources>

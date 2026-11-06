@@ -13,8 +13,8 @@ android {
         applicationId = "app.muninn.keyboard"
         minSdk = 21
         targetSdk = 37
-        versionCode = 4
-        versionName = "0.2.0"
+        versionCode = 5
+        versionName = "0.2.1"
         ndk {
             abiFilters.clear()
             abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64"))
@@ -42,6 +42,8 @@ android {
             isShrinkResources = false
             isDebuggable = false
             isJniDebuggable = false
+            // Muninn: the build people install. Signed with Muninn's permanent key when it is available.
+            if (muninnKeystore != null) signingConfig = signingConfigs.getByName("muninn")
         }
         create("nouserlib") { // same as release, but does not allow the user to provide a library
             isMinifyEnabled = true
