@@ -9,6 +9,7 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -113,6 +114,7 @@ private val Daylight = lightColorScheme(
 val MuninnSerif = FontFamily(Font(R.font.muninn_instrument_serif_italic, FontWeight.Normal, FontStyle.Italic))
 
 /** Onest: everything else. A variable font; the weight axis is set for each weight (Android 8+). */
+@OptIn(ExperimentalTextApi::class)
 val MuninnSans = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) FontFamily(
     listOf(400, 500, 600, 700).map { w ->
         Font(R.font.muninn_onest, FontWeight(w), variationSettings = FontVariation.Settings(FontVariation.weight(w)))
