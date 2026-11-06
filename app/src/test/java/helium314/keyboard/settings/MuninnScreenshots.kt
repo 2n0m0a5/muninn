@@ -55,7 +55,11 @@ class MuninnScreenshots {
     @Test fun home() = shoot("home", 1240) { MainSettingsScreen({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}) }
     @Test fun typing() = shoot("typing") { MuninnTypingScreen({}, {}, {}, {}, {}, {}, {}) }
     @Test fun memory() = shoot("memory", 1300) { MuninnMemoryScreen({}, {}) }
-    @Test fun look() = shoot("look") { MuninnLookScreen({}, {}) }
+    @Test fun look() = shoot("look", 1500) { MuninnLookScreen({}, {}) }
+    @Test fun appearance() {
+        helium314.keyboard.settings.SettingsActivity.settingsContainer = helium314.keyboard.settings.SettingsContainer(androidx.test.core.app.ApplicationProvider.getApplicationContext())
+        shoot("appearance", 1500) { helium314.keyboard.settings.screens.AppearanceScreen {} }
+    }
     @Test fun cache() = shoot("cache") { MuninnCacheScreen {} }
     @Test fun cacheWithClips() {
         Assume.assumeTrue(out != null)

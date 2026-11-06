@@ -1672,7 +1672,7 @@ public class LatinIME extends InputMethodService implements
         setNeutralSuggestionStrip();
     }
 
-    /** Muninn, calm reminders: the clipboard button above the keys is gold while any reminder is open */
+    /** Muninn, calm reminders: the feather above the keys breathes while any reminder is open */
     private void updateMuninnCalmSignal() {
         if (hasSuggestionStripView())
             mSuggestionStripView.setMuninnReminderSignal(MuninnReminders.INSTANCE.hasOpenReminders(this));

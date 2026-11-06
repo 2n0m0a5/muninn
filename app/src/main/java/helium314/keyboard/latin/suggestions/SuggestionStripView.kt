@@ -230,12 +230,37 @@ class SuggestionStripView(context: Context, attrs: AttributeSet?, defStyle: Int)
         suggestionsStrip.layoutDirection = newLayoutDirection
     }
 
-    /** Muninn, calm reminders: tint the clipboard buttons gold while any reminder is open */
+    private var muninnPulse: android.animation.ValueAnimator? = null
+
+    /** Muninn, calm reminders: while any reminder is open, the feather breathes (grows a little and glows, then rests) */
     fun setMuninnReminderSignal(active: Boolean) {
-        val colors = Settings.getValues().mColors
-        val color = if (active) colors.get(ColorType.CLIPBOARD_PIN) else colors.get(ColorType.TOOL_BAR_KEY)
-        listOf(toolbar, pinnedKeys).forEach { group ->
-            (group.findViewWithTag<View>(ToolbarKey.CLIPBOARD) as? android.widget.ImageView)?.setColorFilter(color)
+        if (!active) {
+            muninnPulse?.cancel()
+            muninnPulse = null
+            toolbarExpandKey.scaleX = (if (toolbarContainer.visibility != VISIBLE) 1f else -1f) * direction
+            toolbarExpandKey.scaleY = 1f
+            toolbarExpandKey.alpha = 1f
+            return
+        }
+        if (muninnPulse != null) return
+        muninnPulse = android.animation.ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = 2600
+            repeatCount = android.animation.ValueAnimator.INFINITE
+            interpolator = android.view.animation.LinearInterpolator()
+            addUpdateListener {
+                val t = it.animatedValue as Float
+                // two quick beats, then a long rest: a heartbeat rather than a blinking light
+                val beat = when {
+                    t < 0.12f -> kotlin.math.sin(t / 0.12f * Math.PI).toFloat()
+                    t in 0.18f..0.30f -> 0.6f * kotlin.math.sin((t - 0.18f) / 0.12f * Math.PI).toFloat()
+                    else -> 0f
+                }
+                val flip = if (toolbarContainer.visibility != VISIBLE) 1f else -1f
+                toolbarExpandKey.scaleX = (1f + 0.22f * beat) * flip * direction
+                toolbarExpandKey.scaleY = 1f + 0.22f * beat
+                toolbarExpandKey.alpha = 0.75f + 0.25f * beat
+            }
+            start()
         }
     }
 
@@ -317,6 +342,8 @@ class SuggestionStripView(context: Context, attrs: AttributeSet?, defStyle: Int)
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
         dismissMoreSuggestionsPanel()
+        muninnPulse?.cancel()
+        muninnPulse = null
     }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {

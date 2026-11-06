@@ -155,7 +155,7 @@
     <string name="muninn_more_options">More options</string>
     <string name="muninn_fewer_options">Fewer options</string>
     <string name="muninn_more_options_description">%d more, for when you want to fine-tune</string>
-    <string name="muninn_intro_appearance">How the keyboard looks: colours, key shape and size.</string>
+    <string name="muninn_intro_appearance">How the keyboard looks: colours, background picture, icons and sizes. The key style is in Look &amp; feel.</string>
     <string name="muninn_intro_preferences">How the keys behave and feel, and what the clipboard keeps.</string>
     <string name="muninn_intro_correction">How Muninn helps you spell: corrections, suggestions and capital letters.</string>
     <string name="muninn_intro_toolbar">The row of buttons above the keys: which ones show, and when.</string>
@@ -172,7 +172,7 @@
     <string name="muninn_remind_first_time">First time</string>
     <string name="muninn_remind_explained">After that, Muninn keeps bringing it back at changing times, further apart each time, until you press Done or stop the reminder.</string>
     <string name="muninn_remind_how_it_works">How a reminder reaches you</string>
-    <string name="muninn_way_calm">The clipboard button above the keys turns gold while a reminder is open</string>
+    <string name="muninn_way_calm">The feather above the keys gently beats while a reminder is open</string>
     <string name="muninn_way_noticeable">A gold chip when you open the keyboard. Never while you type.</string>
     <string name="muninn_way_loud">A notification, so it reaches you even when the keyboard is closed or busy</string>
     <string name="muninn_ask_still_wanted">Ask if still needed</string>
@@ -217,7 +217,7 @@
     <string name="muninn_how_hold_space_does">moves the cursor</string>
     <string name="muninn_how_hold_clip">Hold a clip</string>
     <string name="muninn_how_hold_clip_does">pin, remind me, tags, delete</string>
-    <string name="muninn_how_gold">The clipboard button turns gold</string>
+    <string name="muninn_how_gold">The feather beats</string>
     <string name="muninn_how_gold_does">a reminder is waiting for you</string>
     <string name="muninn_how_chip">A reminder in the bar</string>
     <string name="muninn_how_chip_does">tap it to paste · ✓ done · later · ✕ stop</string>
@@ -258,6 +258,16 @@
     <string name="muninn_typing_suggestions_sub">Three words above the keys</string>
     <string name="muninn_typing_swipe">Swipe to type</string>
     <string name="muninn_typing_swipe_sub">Slide across letters instead of tapping</string>
+    <string name="muninn_swipe_get_sub">Draw a word by sliding across its letters. One tap to add it.</string>
+    <string name="muninn_swipe_get">Get it</string>
+    <string name="muninn_swipe_getting">Getting…</string>
+    <string name="muninn_swipe_get_it">Get swipe typing</string>
+    <string name="muninn_swipe_title">Get swipe typing?</string>
+    <string name="muninn_swipe_explain">Turning slides into words needs a small piece of Google’s keyboard (about 1 MB). Open-source keyboards aren’t allowed to include it, so Muninn downloads it once from GitHub and keeps it only if its fingerprint matches the known file exactly.
+
+Afterwards Muninn restarts by itself, and swipe typing is on.</string>
+    <string name="muninn_swipe_ready">Swipe typing is ready. Muninn restarts now.</string>
+    <string name="muninn_swipe_failed">Couldn’t get it. Check the internet connection and try again.</string>
     <string name="muninn_typing_autocap">Capital letter after a full stop</string>
     <string name="muninn_typing_autocap_sub">Starts each sentence for you</string>
     <string name="muninn_typing_more">Corrections, dictionaries, gestures, toolbar</string>
@@ -303,6 +313,27 @@
     <string name="muninn_look_keys">Keys</string>
     <string name="muninn_key_height">Key height</string>
     <string name="muninn_key_borders">Key borders</string>
+    <string name="muninn_key_style">Key style</string>
+    <string name="muninn_key_style_sub">The shape of every key. Muninn’s own: small carved rune stones.</string>
+    <string name="style_name_Muninn">Muninn</string>
+    <!-- Appearance: background picture and icons -->
+    <string name="muninn_bg_title">Background picture</string>
+    <string name="muninn_bg_how">The picture fills the keyboard and keeps its shape: nothing is squeezed. The middle of the picture shows behind the keys.</string>
+    <string name="muninn_bg_none">None</string>
+    <string name="muninn_bg_set">Chosen</string>
+    <string name="muninn_bg_chosen">A picture is set</string>
+    <string name="muninn_bg_upright">Phone upright</string>
+    <string name="muninn_bg_sideways">Phone sideways</string>
+    <string name="muninn_bg_sideways_none">None: the upright picture is used</string>
+    <string name="muninn_bg_choose">Choose</string>
+    <string name="muninn_bg_change">Change</string>
+    <string name="muninn_bg_remove">Remove</string>
+    <string name="muninn_appearance_icons">Icons on the keys (Shift, Delete, Enter, toolbar)</string>
+    <string name="muninn_icon_set">Icon set</string>
+    <string name="muninn_accent_shift">Gold Shift arrow</string>
+    <string name="muninn_accent_shift_sub">While Shift is on, its arrow turns gold</string>
+    <string name="muninn_customize_icons">Change one icon</string>
+    <string name="muninn_customize_icons_sub">Pick a different picture for a single key</string>
     <string name="muninn_key_borders_sub">A thin edge around each key</string>
     <string name="muninn_number_row_sub">Digits always on top</string>
     <string name="muninn_look_more">Your own colours, background picture, fonts</string>

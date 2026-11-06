@@ -155,6 +155,8 @@ fun MuninnTypingScreen(
                 if (JniUtils.sHaveGestureLib)
                     MuninnPrefSwitch(Settings.PREF_GESTURE_INPUT, Defaults.PREF_GESTURE_INPUT,
                         stringResource(R.string.muninn_typing_swipe), stringResource(R.string.muninn_typing_swipe_sub)) { reload() }
+                else if (helium314.keyboard.latin.MuninnSwipeLibrary.canGet())
+                    GetSwipeTypingRow()
                 MuninnPrefSwitch(Settings.PREF_AUTO_CAP, Defaults.PREF_AUTO_CAP,
                     stringResource(R.string.muninn_typing_autocap), stringResource(R.string.muninn_typing_autocap_sub)) { reload() }
                 MoreOptionsRow(stringResource(R.string.muninn_typing_more), more) { more = !more }
@@ -179,6 +181,46 @@ fun MuninnTypingScreen(
 }
 
 private fun reload() = KeyboardSwitcher.getInstance().setThemeNeedsReload()
+
+/** swipe typing isn't here yet: one tap gets it (with a plain explanation of what is downloaded, and why) */
+@Composable
+private fun GetSwipeTypingRow() {
+    val ctx = LocalContext.current
+    val haptic = LocalHapticFeedback.current
+    var ask by remember { mutableStateOf(false) }
+    var working by remember { mutableStateOf(false) }
+    MuninnRowItem(stringResource(R.string.muninn_typing_swipe), stringResource(R.string.muninn_swipe_get_sub),
+        onClick = { if (!working) ask = true }) {
+        Box(Modifier.clip(RoundedCornerShape(50)).background(MaterialTheme.colorScheme.primary)
+            .clickable(enabled = !working) { ask = true }.padding(horizontal = 14.dp, vertical = 7.dp)) {
+            Text(stringResource(if (working) R.string.muninn_swipe_getting else R.string.muninn_swipe_get),
+                color = MaterialTheme.colorScheme.onPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        }
+    }
+    if (ask) AlertDialog(
+        onDismissRequest = { ask = false },
+        title = { Text(stringResource(R.string.muninn_swipe_title)) },
+        text = { Text(stringResource(R.string.muninn_swipe_explain)) },
+        confirmButton = {
+            TextButton(onClick = {
+                ask = false
+                working = true
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                Thread {
+                    val ok = helium314.keyboard.latin.MuninnSwipeLibrary.install(ctx)
+                    android.os.Handler(android.os.Looper.getMainLooper()).post {
+                        working = false
+                        if (ok) {
+                            Toast.makeText(ctx, R.string.muninn_swipe_ready, Toast.LENGTH_LONG).show()
+                            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ helium314.keyboard.latin.MuninnSwipeLibrary.restart() }, 1200)
+                        } else Toast.makeText(ctx, R.string.muninn_swipe_failed, Toast.LENGTH_LONG).show()
+                    }
+                }.start()
+            }) { Text(stringResource(R.string.muninn_swipe_get_it)) }
+        },
+        dismissButton = { TextButton(onClick = { ask = false }) { Text(stringResource(android.R.string.cancel)) } },
+    )
+}
 
 // ---------------------------------------------------------------- Memory (Muninn)
 
@@ -469,6 +511,8 @@ fun MuninnLookScreen(onClickBack: () -> Unit, onClickAppearance: () -> Unit) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     MuninnLabel(stringResource(R.string.muninn_look_keys))
                     MuninnCard {
+                        KeyStyleChooser { changed() }
+                        MuninnDivider()
                         Column(Modifier.padding(horizontal = 14.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(stringResource(R.string.muninn_key_height), fontSize = 15.sp, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
@@ -548,6 +592,88 @@ private fun setFollow(ctx: android.content.Context, on: Boolean) {
     }
 }
 
+/** the four key styles side by side, each shown as a small key, so the choice is made by looking, not by reading */
+@Composable
+private fun KeyStyleChooser(onChanged: () -> Unit) {
+    val ctx = LocalContext.current
+    val prefs = ctx.prefs()
+    val haptic = LocalHapticFeedback.current
+    var style by remember { mutableStateOf(prefs.getString(Settings.PREF_THEME_STYLE, Defaults.PREF_THEME_STYLE) ?: Defaults.PREF_THEME_STYLE) }
+    Column(Modifier.padding(horizontal = 14.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(stringResource(R.string.muninn_key_style), fontSize = 15.sp, fontWeight = FontWeight.Medium)
+            Text(stringResource(R.string.muninn_key_style_sub), fontSize = 12.5.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            KeyboardTheme.STYLES.forEach { s ->
+                val selected = s == style
+                val shape = RoundedCornerShape(14.dp)
+                Column(
+                    Modifier.weight(1f).clip(shape)
+                        .background(if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surface)
+                        .border(if (selected) 1.5.dp else 1.dp,
+                            if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant, shape)
+                        .clickable {
+                            if (s == style) return@clickable
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            style = s
+                            prefs.edit {
+                                putString(Settings.PREF_THEME_STYLE, s)
+                                if (s != KeyboardTheme.STYLE_HOLO) {
+                                    if (prefs.getString(Settings.PREF_THEME_COLORS, null) == KeyboardTheme.THEME_HOLO_WHITE) remove(Settings.PREF_THEME_COLORS)
+                                    if (prefs.getString(Settings.PREF_THEME_COLORS_NIGHT, null) == KeyboardTheme.THEME_HOLO_WHITE) remove(Settings.PREF_THEME_COLORS_NIGHT)
+                                }
+                            }
+                            helium314.keyboard.keyboard.internal.KeyboardIconsSet.needsReload = true
+                            onChanged()
+                        }
+                        .padding(vertical = 10.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(7.dp)
+                ) {
+                    StyleKey(s, MaterialTheme.colorScheme.surfaceContainerHighest, MaterialTheme.colorScheme.onSurface,
+                        Modifier.size(width = 34.dp, height = 30.dp), if (s == KeyboardTheme.STYLE_MUNINN) "ᛗ" else "a")
+                    Text(styleName(s), fontSize = 12.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                        color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface, maxLines = 1)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun styleName(style: String) = when (style) {
+    KeyboardTheme.STYLE_MUNINN -> stringResource(R.string.style_name_Muninn)
+    KeyboardTheme.STYLE_ROUNDED -> stringResource(R.string.style_name_Rounded)
+    else -> style
+}
+
+/** one key drawn the way a style draws it: Muninn's carved stone with its edge, Rounded's soft pill, Material's flat tile, Holo's glassy gradient */
+@Composable
+private fun StyleKey(style: String, fill: Color, ink: Color, modifier: Modifier, label: String? = null, labelSize: Float = 14f) {
+    val gold = MaterialTheme.colorScheme.primary
+    when (style) {
+        KeyboardTheme.STYLE_MUNINN -> Box(modifier) {
+            val shape = RoundedCornerShape(6.dp)
+            Box(Modifier.matchParentSize().padding(top = 2.dp).clip(shape).background(androidx.compose.ui.graphics.lerp(fill, Color.Black, 0.5f)))
+            Box(Modifier.fillMaxWidth().fillMaxHeight().padding(bottom = 2.dp).clip(shape).background(fill), contentAlignment = Alignment.Center) {
+                Box(Modifier.align(Alignment.TopCenter).padding(top = 1.dp, start = 6.dp, end = 6.dp).fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.11f)))
+                if (label != null) Text(label, color = if (label == "ᛗ") gold else ink, fontSize = labelSize.sp,
+                    fontFamily = if (label == "ᛗ") MuninnRunic else null)
+            }
+        }
+        else -> {
+            val shape = RoundedCornerShape(when (style) { KeyboardTheme.STYLE_ROUNDED -> 11.dp; KeyboardTheme.STYLE_HOLO -> 2.dp; else -> 4.dp })
+            val bg = if (style == KeyboardTheme.STYLE_HOLO)
+                Modifier.background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(fill.copy(alpha = 0.6f), fill)), shape)
+            else Modifier.background(fill, shape)
+            Box(modifier.clip(shape).then(bg), contentAlignment = Alignment.Center) {
+                if (label != null) Text(label, color = ink, fontSize = labelSize.sp)
+            }
+        }
+    }
+}
+
 /** a small keyboard drawn with the current theme's own colours; changes show the moment they are made */
 @Composable
 private fun LivePreview(version: Int, height: Float) {
@@ -556,6 +682,7 @@ private fun LivePreview(version: Int, height: Float) {
     val colors = remember(version) { KeyboardTheme.getColorsForCurrentTheme(ctx) }
     val borders = remember(version) { prefs.getBoolean(Settings.PREF_THEME_KEY_BORDERS, Defaults.PREF_THEME_KEY_BORDERS) }
     val numberRow = remember(version) { prefs.getBoolean(Settings.PREF_SHOW_NUMBER_ROW, Defaults.PREF_SHOW_NUMBER_ROW) }
+    val style = remember(version) { prefs.getString(Settings.PREF_THEME_STYLE, Defaults.PREF_THEME_STYLE) ?: Defaults.PREF_THEME_STYLE }
     val bg = Color(colors.get(ColorType.MAIN_BACKGROUND))
     val key = if (borders) Color(colors.get(ColorType.KEY_BACKGROUND)) else Color.Transparent
     val functional = if (borders) Color(colors.get(ColorType.FUNCTIONAL_KEY_BACKGROUND)) else Color.Transparent
@@ -577,9 +704,7 @@ private fun LivePreview(version: Int, height: Float) {
         fun KeyRow(keys: String, pad: Int = 0) {
             Row(Modifier.fillMaxWidth().padding(horizontal = pad.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 keys.forEach { c ->
-                    Box(Modifier.weight(1f).height(keyH).clip(RoundedCornerShape(7.dp)).background(key), contentAlignment = Alignment.Center) {
-                        Text(c.toString(), color = text, fontSize = (15 * height.coerceIn(0.8f, 1.2f)).sp)
-                    }
+                    StyleKey(style, key, text, Modifier.weight(1f).height(keyH), c.toString(), 15 * height.coerceIn(0.8f, 1.2f))
                 }
             }
         }
@@ -587,13 +712,12 @@ private fun LivePreview(version: Int, height: Float) {
         KeyRow("qwertyuiop")
         KeyRow("asdfghjkl", 15)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            Box(Modifier.weight(1.45f).height(keyH).clip(RoundedCornerShape(7.dp)).background(functional), contentAlignment = Alignment.Center) {
-                Text("?123", color = text, fontSize = 11.5.sp, fontWeight = FontWeight.SemiBold)
-            }
-            Box(Modifier.weight(5.4f).height(keyH).clip(RoundedCornerShape(7.dp)).background(space), contentAlignment = Alignment.Center) {
+            StyleKey(style, functional, text, Modifier.weight(1.45f).height(keyH), "?123", 11.5f)
+            Box(Modifier.weight(5.4f).height(keyH), contentAlignment = Alignment.Center) {
+                StyleKey(style, space, text, Modifier.matchParentSize())
                 Text("ᛗᚢᚾᛁᚾᚾ", fontFamily = MuninnRunic, color = text.copy(alpha = 0.5f), fontSize = 10.sp, letterSpacing = 4.sp)
             }
-            Box(Modifier.weight(1.45f).height(keyH).clip(RoundedCornerShape(7.dp)).background(action))
+            StyleKey(style, action, text, Modifier.weight(1.45f).height(keyH))
         }
         Spacer(Modifier.height(0.dp))
     }

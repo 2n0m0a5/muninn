@@ -944,6 +944,10 @@ public class Key implements Comparable<Key> {
         return background;
     }
 
+    /** Muninn: for the rune-stone key style */
+    public final boolean isMuninnPressedOrLocked() { return mPressed || mLocked; }
+    public final boolean isMuninnLocked() { return mLocked && !mPressed; }
+
     public final boolean hasActionKeyPopups() {
         if (!hasActionKeyBackground()) return false;
         // only use the special action key popups for action colored keys, and only for icon popups

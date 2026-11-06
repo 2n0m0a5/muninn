@@ -118,6 +118,12 @@ private object AppUpgrade {
             entries.add(if (voice >= 0) voice + 1 else 0, "TRANSLATE" + helium314.keyboard.latin.common.Constants.Separators.KV + "true")
             prefs.edit { putString(Settings.PREF_TOOLBAR_KEYS, entries.joinToString(helium314.keyboard.latin.common.Constants.Separators.ENTRY)) }
         }
+        // Muninn 0.10.0: Muninn's own key style (rune stones) replaces Rounded, once; anyone on Material or Holo keeps it
+        if (storedVersion in 1 until 14) {
+            val style = prefs.getString(Settings.PREF_THEME_STYLE, null)
+            if (style == null || style == helium314.keyboard.keyboard.KeyboardTheme.STYLE_ROUNDED)
+                prefs.edit { putString(Settings.PREF_THEME_STYLE, helium314.keyboard.keyboard.KeyboardTheme.STYLE_MUNINN) }
+        }
         if (oldVersion == 0) {
             // fresh install -> no need to upgrade, as this does things like keeping old defaults which is on wanted on actual upgrade
             prefs.edit { putInt(Settings.PREF_VERSION_CODE, BuildConfig.VERSION_CODE) }

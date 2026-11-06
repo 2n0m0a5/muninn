@@ -36,7 +36,7 @@ import helium314.keyboard.latin.utils.Theme
 import helium314.keyboard.settings.dialogs.ColorThemePickerDialog
 import helium314.keyboard.settings.dialogs.CustomizeIconsDialog
 import helium314.keyboard.settings.initPreview
-import helium314.keyboard.settings.preferences.BackgroundImagePref
+import helium314.keyboard.settings.preferences.MuninnBackgroundPicturePref
 import helium314.keyboard.settings.preferences.CustomFontPreference
 import helium314.keyboard.settings.preferences.KeyboardScalePreference
 import helium314.keyboard.settings.preferences.TextInputPreference
@@ -58,15 +58,14 @@ fun AppearanceScreen(
     val dayNightMode = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && prefs.getBoolean(Settings.PREF_THEME_DAY_NIGHT, Defaults.PREF_THEME_DAY_NIGHT)
     val items = listOf(
         R.string.settings_screen_theme,
-        Settings.PREF_THEME_STYLE,
+        Settings.PREF_THEME_COLORS,
+        if (dayNightMode) Settings.PREF_THEME_COLORS_NIGHT else null,
+        SettingsWithoutKey.BACKGROUND_IMAGE,
+        Settings.PREF_NAVBAR_COLOR,
+        R.string.muninn_appearance_icons,
         Settings.PREF_ICON_STYLE,
         Settings.PREF_ACCENT_SHIFTED_ICON,
         Settings.PREF_CUSTOM_ICON_NAMES,
-        Settings.PREF_THEME_COLORS,
-        if (dayNightMode) Settings.PREF_THEME_COLORS_NIGHT else null,
-        Settings.PREF_NAVBAR_COLOR,
-        SettingsWithoutKey.BACKGROUND_IMAGE,
-        SettingsWithoutKey.BACKGROUND_IMAGE_LANDSCAPE,
         R.string.settings_category_miscellaneous,
         Settings.PREF_ENABLE_SPLIT_KEYBOARD,
         if (prefs.getBoolean(Settings.PREF_ENABLE_SPLIT_KEYBOARD_LANDSCAPE, Defaults.PREF_ENABLE_SPLIT_KEYBOARD)
@@ -96,7 +95,7 @@ fun AppearanceScreen(
         title = stringResource(R.string.settings_screen_appearance),
         settings = items,
         intro = stringResource(R.string.muninn_intro_appearance),
-        essentials = setOf(Settings.PREF_THEME_COLORS, Settings.PREF_THEME_COLORS_NIGHT, Settings.PREF_THEME_STYLE, Settings.PREF_FONT_SCALE, SettingsWithoutKey.BACKGROUND_IMAGE),
+        essentials = setOf(Settings.PREF_THEME_COLORS, Settings.PREF_THEME_COLORS_NIGHT, Settings.PREF_FONT_SCALE, SettingsWithoutKey.BACKGROUND_IMAGE),
     )
 }
 
@@ -122,12 +121,12 @@ fun createAppearanceSettings(context: Context) = listOf(
             KeyboardSwitcher.getInstance().setThemeNeedsReload()
         }
     },
-    Setting(context, Settings.PREF_ICON_STYLE, R.string.icon_style) { setting ->
+    Setting(context, Settings.PREF_ICON_STYLE, R.string.muninn_icon_set) { setting ->
         val ctx = LocalContext.current
         val b = (ctx.getActivity() as? SettingsActivity)?.prefChanged?.collectAsState()
         if ((b?.value ?: 0) < 0)
             Log.v("irrelevant", "stupid way to trigger recomposition on preference change")
-        val items = KeyboardTheme.STYLES.map { it.getStringResourceOrName("style_name_", ctx) to it }
+        val items = KeyboardTheme.ICON_STYLES.map { it.getStringResourceOrName("style_name_", ctx) to it }
         ListPreference(
             setting,
             items,
@@ -138,13 +137,14 @@ fun createAppearanceSettings(context: Context) = listOf(
             KeyboardSwitcher.getInstance().setThemeNeedsReload()
         }
     },
-    Setting(context, Settings.PREF_ACCENT_SHIFTED_ICON, R.string.accent_shifted_icon) {
+    Setting(context, Settings.PREF_ACCENT_SHIFTED_ICON, R.string.muninn_accent_shift, R.string.muninn_accent_shift_sub) {
         SwitchPreference(it, Defaults.PREF_ACCENT_SHIFTED_ICON) { KeyboardSwitcher.getInstance().setThemeNeedsReload() }
     },
-    Setting(context, Settings.PREF_CUSTOM_ICON_NAMES, R.string.customize_icons) { setting ->
+    Setting(context, Settings.PREF_CUSTOM_ICON_NAMES, R.string.muninn_customize_icons, R.string.muninn_customize_icons_sub) { setting ->
         var showDialog by rememberSaveable { mutableStateOf(false) }
         Preference(
             name = setting.title,
+            description = setting.description,
             onClick = { showDialog = true }
         )
         if (showDialog) {
@@ -201,13 +201,8 @@ fun createAppearanceSettings(context: Context) = listOf(
     Setting(context, Settings.PREF_NAVBAR_COLOR, R.string.theme_navbar, R.string.day_night_mode_summary) {
         SwitchPreference(it, Defaults.PREF_NAVBAR_COLOR)
     },
-    Setting(context, SettingsWithoutKey.BACKGROUND_IMAGE, R.string.customize_background_image) {
-        BackgroundImagePref(it, false)
-    },
-    Setting(context, SettingsWithoutKey.BACKGROUND_IMAGE_LANDSCAPE,
-        R.string.customize_background_image_landscape, R.string.summary_customize_background_image_landscape)
-    {
-        BackgroundImagePref(it, true)
+    Setting(context, SettingsWithoutKey.BACKGROUND_IMAGE, R.string.muninn_bg_title) {
+        MuninnBackgroundPicturePref(it)
     },
     Setting(context, Settings.PREF_ENABLE_SPLIT_KEYBOARD, R.string.enable_split_keyboard) {
         var show by remember { mutableStateOf(false) }

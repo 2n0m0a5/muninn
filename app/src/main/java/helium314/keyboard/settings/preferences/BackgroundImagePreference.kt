@@ -8,7 +8,18 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -33,6 +44,79 @@ import helium314.keyboard.settings.dialogs.ConfirmationDialog
 import helium314.keyboard.settings.dialogs.InfoDialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+
+/**
+ * Muninn: one row for the background picture. A single dialog shows both pictures (phone upright and sideways, and
+ * day or night when the keyboard follows the phone), each with Choose / Remove.
+ */
+@Composable
+fun MuninnBackgroundPicturePref(setting: Setting) {
+    val ctx = LocalContext.current
+    var show by rememberSaveable { mutableStateOf(false) }
+    var night by rememberSaveable { mutableStateOf(false) }
+    var landscape by rememberSaveable { mutableStateOf(false) }
+    var version by remember { mutableIntStateOf(0) }
+    var error by rememberSaveable { mutableStateOf(false) }
+    val dayNight = ctx.prefs().getBoolean(Settings.PREF_THEME_DAY_NIGHT, Defaults.PREF_THEME_DAY_NIGHT)
+    if (!dayNight) night = false
+    val scope = rememberCoroutineScope { Dispatchers.IO }
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode != Activity.RESULT_OK) return@rememberLauncherForActivityResult
+        val uri = result.data?.data ?: return@rememberLauncherForActivityResult
+        scope.launch(Dispatchers.IO) {
+            if (!setBackgroundImage(ctx, uri, night, landscape)) error = true
+            version++
+        }
+    }
+    fun has(n: Boolean, l: Boolean) = Settings.getCustomBackgroundFile(ctx, n, l).exists()
+    val any = remember(version, show) { listOf(false, true).any { n -> listOf(false, true).any { l -> has(n, l) } } }
+    Preference(
+        name = setting.title,
+        description = stringResource(if (any) R.string.muninn_bg_set else R.string.muninn_bg_none),
+        onClick = { show = true }
+    )
+    if (show) {
+        AlertDialog(
+            onDismissRequest = { show = false },
+            confirmButton = { TextButton(onClick = { show = false }) { Text(stringResource(R.string.muninn_reminder_done)) } },
+            title = { Text(stringResource(R.string.muninn_bg_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(stringResource(R.string.muninn_bg_how), style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (dayNight) helium314.keyboard.settings.MuninnSegmented(
+                        listOf(stringResource(R.string.day_or_night_day), stringResource(R.string.day_or_night_night)),
+                        if (night) 1 else 0) { night = it == 1 }
+                    listOf(false, true).forEach { l ->
+                        val exists = remember(version, night) { has(night, l) }
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Column(Modifier.weight(1f)) {
+                                Text(stringResource(if (l) R.string.muninn_bg_sideways else R.string.muninn_bg_upright),
+                                    style = MaterialTheme.typography.titleSmall)
+                                Text(stringResource(when {
+                                    exists -> R.string.muninn_bg_chosen
+                                    l -> R.string.muninn_bg_sideways_none
+                                    else -> R.string.muninn_bg_none
+                                }), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            if (exists) TextButton(onClick = {
+                                Settings.getCustomBackgroundFile(ctx, night, l).delete()
+                                Settings.clearCachedBackgroundImages()
+                                KeyboardSwitcher.getInstance().setThemeNeedsReload()
+                                version++
+                            }) { Text(stringResource(R.string.muninn_bg_remove)) }
+                            TextButton(onClick = {
+                                landscape = l
+                                launcher.launch(IntentUtils.getResolvableTypeIntent(ctx, "image/*").setAction(Intent.ACTION_OPEN_DOCUMENT))
+                            }) { Text(stringResource(if (exists) R.string.muninn_bg_change else R.string.muninn_bg_choose)) }
+                        }
+                    }
+                }
+            }
+        )
+    }
+    if (error) InfoDialog(stringResource(R.string.file_read_error)) { error = false }
+}
 
 @Composable
 fun BackgroundImagePref(setting: Setting, isLandscape: Boolean) {

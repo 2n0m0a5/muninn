@@ -42,8 +42,9 @@ object Defaults {
     }
 
     private const val DEFAULT_SIZE_SCALE = 1.0f // 100%
-    const val PREF_THEME_STYLE = KeyboardTheme.STYLE_ROUNDED // Muninn: rounded keys with a soft bottom edge
+    const val PREF_THEME_STYLE = KeyboardTheme.STYLE_MUNINN // Muninn: keys as carved rune stones
     fun PREF_ICON_STYLE(prefs: SharedPreferences) = prefs.getString(Settings.PREF_THEME_STYLE, PREF_THEME_STYLE)!!
+        .let { if (it == KeyboardTheme.STYLE_MUNINN) KeyboardTheme.STYLE_ROUNDED else it }
     const val PREF_ACCENT_SHIFTED_ICON = false
     const val PREF_THEME_COLORS = KeyboardTheme.THEME_RUNE_NIGHT
     const val PREF_THEME_COLORS_NIGHT = KeyboardTheme.THEME_RUNE_NIGHT

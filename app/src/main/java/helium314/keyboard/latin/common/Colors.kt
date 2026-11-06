@@ -354,7 +354,7 @@ class DynamicColors(context: Context, override val themeStyle: String, override 
             MAIN_BACKGROUND -> {
                 if (keyboardBackground != null) {
                     if (!backgroundSetupDone) {
-                        keyboardBackground = keyboardBackground!!.toBitmap(view.width, view.height).toDrawable(view.context.resources)
+                        keyboardBackground = muninnCoverCrop(keyboardBackground!!, view.width, view.height, view.context.resources)
                         backgroundSetupDone = true
                     }
                     view.background = keyboardBackground
@@ -539,7 +539,7 @@ class DefaultColors (
             MAIN_BACKGROUND -> {
                 if (keyboardBackground != null) {
                     if (!backgroundSetupDone) {
-                        keyboardBackground = keyboardBackground!!.toBitmap(view.width, view.height).toDrawable(view.context.resources)
+                        keyboardBackground = muninnCoverCrop(keyboardBackground!!, view.width, view.height, view.context.resources)
                         backgroundSetupDone = true
                     }
                     view.background = keyboardBackground
@@ -591,7 +591,7 @@ class AllColors(private val colorMap: EnumMap<ColorType, Int>, override val them
             MAIN_BACKGROUND -> {
                 if (keyboardBackground != null) {
                     if (!backgroundSetupDone) {
-                        keyboardBackground = keyboardBackground!!.toBitmap(view.width, view.height).toDrawable(view.context.resources)
+                        keyboardBackground = muninnCoverCrop(keyboardBackground!!, view.width, view.height, view.context.resources)
                         backgroundSetupDone = true
                     }
                     view.background = keyboardBackground
@@ -670,3 +670,22 @@ enum class ColorType {
 
 // this is not used any more, but we keep in case a colorMap does not get filled for whatever reason
 fun ColorType.default() = ColorUtils.setAlphaComponent(name.hashCode() and 0xffffff, 255)
+
+/**
+ * Muninn: a background picture fills the keyboard without being squeezed. It is scaled until it covers the keyboard,
+ * keeping its shape, and the middle of the picture shows (like a window onto a phone-sized wallpaper).
+ */
+fun muninnCoverCrop(drawable: Drawable, width: Int, height: Int, res: android.content.res.Resources): Drawable {
+    if (width <= 0 || height <= 0) return drawable
+    val iw = drawable.intrinsicWidth
+    val ih = drawable.intrinsicHeight
+    if (iw <= 0 || ih <= 0) return drawable.toBitmap(width, height).toDrawable(res) // a plain colour or gradient
+    val source = drawable.toBitmap(iw, ih)
+    val scale = maxOf(width.toFloat() / iw, height.toFloat() / ih)
+    val cropW = (width / scale).toInt().coerceIn(1, iw)
+    val cropH = (height / scale).toInt().coerceIn(1, ih)
+    val left = (iw - cropW) / 2
+    val top = (ih - cropH) / 2
+    val cropped = android.graphics.Bitmap.createBitmap(source, left, top, cropW, cropH)
+    return android.graphics.Bitmap.createScaledBitmap(cropped, width, height, true).toDrawable(res)
+}
