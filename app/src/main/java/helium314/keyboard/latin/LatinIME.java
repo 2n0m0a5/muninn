@@ -29,6 +29,7 @@ import android.view.View;
 import android.view.Window;
 import android.view.inputmethod.CompletionInfo;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputConnection;
 import android.view.inputmethod.InlineSuggestion;
 import android.view.inputmethod.InlineSuggestionsRequest;
 import android.view.inputmethod.InlineSuggestionsResponse;
@@ -143,6 +144,30 @@ public class LatinIME extends InputMethodService implements
     private InsetsOutlineProvider mInsetsUpdater;
     private SuggestionStripView mSuggestionStripView;
     private MuninnVoice mMuninnVoice; // Muninn: voice typing inside the keyboard
+    private MuninnTranslate mMuninnTranslate; // Muninn: translate bar above the keys
+    @Nullable private InputConnection mMuninnRedirect; // Muninn: while not null, the keys type into this (the translate box)
+
+    /** Muninn: the keys type into Muninn's own text box (the translate bar) instead of the app, or back into the app (null) */
+    public void setMuninnInputRedirect(@Nullable final InputConnection ic) {
+        mInputLogic.finishInput();
+        mMuninnRedirect = ic;
+        mInputLogic.startInput(mRichImm.getCombiningRulesExtraValueOfCurrentSubtype(), mSettings.getCurrent());
+        if (ic != null) mInputLogic.mConnection.resetCachesUponCursorMoveAndReturnSuccess(0, 0, false);
+        else mInputLogic.mConnection.tryFixIncorrectCursorPosition();
+        mKeyboardSwitcher.updateShiftState(getCurrentAutoCapsState(), getCurrentRecapitalizeState());
+    }
+
+    /** Muninn: the app's own text field, even while the keys type into the translate box */
+    @Nullable
+    public InputConnection realInputConnection() {
+        return super.getCurrentInputConnection();
+    }
+
+    @Override
+    public InputConnection getCurrentInputConnection() {
+        final InputConnection redirect = mMuninnRedirect;
+        return redirect != null ? redirect : super.getCurrentInputConnection();
+    }
 
     /** Muninn: the bar above the keys, for Muninn's own views (voice, reminders) */
     @Nullable
@@ -1077,6 +1102,7 @@ public class LatinIME extends InputMethodService implements
 
     void onFinishInputViewInternal(final boolean finishingInput) {
         if (mMuninnVoice != null) mMuninnVoice.cancel(); // Muninn: the keyboard closed, stop listening
+        if (mMuninnTranslate != null) mMuninnTranslate.cancel(); // Muninn: and keep any translation as it is
         super.onFinishInputView(finishingInput);
         Log.i(TAG, "onFinishInputView");
         cleanupInternalStateForFinishInput();
@@ -1100,6 +1126,9 @@ public class LatinIME extends InputMethodService implements
                                   final int composingSpanStart, final int composingSpanEnd) {
         super.onUpdateSelection(oldSelStart, oldSelEnd, newSelStart, newSelEnd,
                 composingSpanStart, composingSpanEnd);
+        // Muninn: while the keys type into the translate box, the app's cursor moves because of the translation
+        // Muninn writes there; that is not the person moving the cursor
+        if (mMuninnRedirect != null) return;
         if (DebugFlags.DEBUG_ENABLED) {
             Log.i(TAG, "onUpdateSelection: oss=" + oldSelStart + ", ose=" + oldSelEnd
                     + ", nss=" + newSelStart + ", nse=" + newSelEnd
@@ -1454,6 +1483,16 @@ public class LatinIME extends InputMethodService implements
     // This method is public for testability of LatinIME, but also in the future it should
     // completely replace #onCodeInput.
     public void onEvent(@NonNull final Event event) {
+        if (KeyCode.MUNINN_TRANSLATE == event.getKeyCode()) {
+            if (mMuninnTranslate == null) mMuninnTranslate = new MuninnTranslate(this);
+            mMuninnTranslate.toggle();
+            return;
+        }
+        // Muninn: Enter in the translate box keeps the translation (there is nothing to send in Muninn's own box)
+        if (mMuninnTranslate != null && mMuninnTranslate.getActive() && event.getKeyCode() == Constants.CODE_ENTER) {
+            mMuninnTranslate.keep();
+            return;
+        }
         if (KeyCode.VOICE_INPUT == event.getKeyCode()) {
             // Muninn: Muninn listens and types itself, instead of switching to another keyboard
             if (mMuninnVoice == null) mMuninnVoice = new MuninnVoice(this);
@@ -1527,6 +1566,8 @@ public class LatinIME extends InputMethodService implements
     private void setSuggestedWords(final SuggestedWords suggestedWords) {
         final SettingsValues currentSettingsValues = mSettings.getCurrent();
         mInputLogic.setSuggestedWords(suggestedWords);
+        // Muninn: while translating, the bar above the keys is the translate bar
+        if (mMuninnTranslate != null && mMuninnTranslate.showIfActive()) return;
         // TODO: Modify this when we support suggestions with hard keyboard
         if (!hasSuggestionStripView()) {
             return;
@@ -1665,6 +1706,7 @@ public class LatinIME extends InputMethodService implements
     @Override
     public void setNeutralSuggestionStrip() {
         final SettingsValues currentSettings = mSettings.getCurrent();
+        if (mMuninnTranslate != null && mMuninnTranslate.showIfActive()) return; // Muninn: translating keeps the bar
         if (mMuninnVoice != null && mMuninnVoice.showIfListening()) return; // Muninn: listening keeps the bar
         if (tryShowMuninnReminder()) return; // Muninn: a reminder comes first
         if (tryShowClipboardSuggestion()) {

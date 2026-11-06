@@ -13,8 +13,8 @@ android {
         applicationId = "app.muninn.keyboard"
         minSdk = 21
         targetSdk = 37
-        versionCode = 12
-        versionName = "0.8.0"
+        versionCode = 13
+        versionName = "0.9.0"
         ndk {
             abiFilters.clear()
             abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64"))
@@ -139,6 +139,8 @@ android {
 
 dependencies {
     // androidx
+    // Muninn: on-device translation inside the keyboard (offline after a one-time model download per language)
+    implementation("com.google.mlkit:translate:17.0.3")
     implementation("androidx.core:core-ktx:1.17.0") // 1.18.0 requires minSdk 23
     implementation("androidx.recyclerview:recyclerview:1.4.0")
     implementation("androidx.autofill:autofill:1.3.0")

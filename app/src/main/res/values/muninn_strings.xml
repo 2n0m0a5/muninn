@@ -496,4 +496,12 @@
     <string name="muninn_voice_ready">Microphone allowed. Tap the mic again to speak.</string>
     <string name="muninn_voice_error">Voice typing stopped. Tap the mic to try again.</string>
     <string name="muninn_voice_unavailable">This phone has no speech service for voice typing</string>
+    <string name="muninn_translate_getting">Getting %1$s → %2$s (once, then offline)…</string>
+    <string name="muninn_translate_type_in">Type in %s</string>
+    <string name="muninn_translate_no_model">Translation isn’t available right now. Check the internet for the first download.</string>
+    <string name="muninn_translate_pair">Languages: tap for another target, hold to swap</string>
+    <string name="muninn_translate_keep">Keep the translation</string>
+    <string name="muninn_translate_discard">Take the translation away</string>
+    <string name="muninn_how_translate">Translate while you type</string>
+    <string name="muninn_how_translate_does">the translate button: type in your language, it lands translated · tap EN → RU for another language, hold to swap</string>
 </resources>

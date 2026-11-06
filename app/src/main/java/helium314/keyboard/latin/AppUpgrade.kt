@@ -110,6 +110,14 @@ private object AppUpgrade {
         // Every Muninn version so far is based on HeliBoard 4.2 (4201); raise this when merging a newer HeliBoard.
         val oldVersion = if (storedVersion in 1 until MUNINN_VERSION_CODE_LIMIT) HELIBOARD_BASE_VERSION_CODE else storedVersion
         if (storedVersion == 2) undoMuninn011Upgrade(prefs)
+        // Muninn 0.9.0: the new Translate button goes right after the mic, switched on
+        if (storedVersion in 1 until 13 && prefs.contains(Settings.PREF_TOOLBAR_KEYS)) {
+            val entries = prefs.getString(Settings.PREF_TOOLBAR_KEYS, "")!!.split(helium314.keyboard.latin.common.Constants.Separators.ENTRY)
+                .filterNot { it.startsWith("TRANSLATE" + helium314.keyboard.latin.common.Constants.Separators.KV) }.toMutableList()
+            val voice = entries.indexOfFirst { it.startsWith("VOICE" + helium314.keyboard.latin.common.Constants.Separators.KV) }
+            entries.add(if (voice >= 0) voice + 1 else 0, "TRANSLATE" + helium314.keyboard.latin.common.Constants.Separators.KV + "true")
+            prefs.edit { putString(Settings.PREF_TOOLBAR_KEYS, entries.joinToString(helium314.keyboard.latin.common.Constants.Separators.ENTRY)) }
+        }
         if (oldVersion == 0) {
             // fresh install -> no need to upgrade, as this does things like keeping old defaults which is on wanted on actual upgrade
             prefs.edit { putInt(Settings.PREF_VERSION_CODE, BuildConfig.VERSION_CODE) }

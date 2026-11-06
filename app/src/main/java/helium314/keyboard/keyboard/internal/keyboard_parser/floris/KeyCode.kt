@@ -184,6 +184,7 @@ object KeyCode {
     const val BACKGROUND_GATHERING =         -10052 // will be useless after removal of gesture data gathering (keep for compatibility)
     const val BACKGROUND_GATHERING_TEMP_OFF =-10053 // will be useless after removal of gesture data gathering (keep for compatibility)
     const val DPAD =                      -10054
+    const val MUNINN_TRANSLATE =          -10070 // Muninn: open or close the translate bar
 
     // Valid in popups and for toolbar key long press only
     const val KEY_REPEAT =                -11000
