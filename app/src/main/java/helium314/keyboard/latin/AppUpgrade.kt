@@ -3,6 +3,7 @@ package helium314.keyboard.latin
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.SharedPreferences
 import androidx.core.content.edit
 import helium314.keyboard.compat.isDeviceLocked
 import helium314.keyboard.compat.isUserLocked
@@ -80,10 +81,35 @@ fun transferOldPinnedClips(context: Context) {
     }
 }
 
+// Muninn: see onUpgrade
+private const val MUNINN_VERSION_CODE_LIMIT = 1000
+private const val HELIBOARD_BASE_VERSION_CODE = 4201
+
+/**
+ * Muninn 0.1.1 (version code 2) was installed over 0.1.0 (version code 1) before the translation in onUpgrade existed,
+ * so every HeliBoard upgrade step ran once. Undo the ones that changed visible settings.
+ */
+private fun undoMuninn011Upgrade(prefs: SharedPreferences) {
+    prefs.edit {
+        // wide key gaps written by the HeliBoard 3.9 step
+        listOf(0 to 1.75f, 1 to 1.1f, 2 to 1.75f, 3 to 1.1f).forEach { (i, written) ->
+            val key = createPrefKeyForBooleanSettings(Settings.PREF_KEY_GAP_SCALE_PREFIX, i, 2)
+            if (prefs.contains(key) && prefs.getFloat(key, -1f) == written) remove(key)
+        }
+        // punctuation suggestions switched by the HeliBoard 3.2 step
+        remove(Settings.PREF_SUGGEST_PUNCTUATION)
+    }
+}
+
 private object AppUpgrade {
     fun onUpgrade(context: Context) {
         val prefs = context.prefs()
-        val oldVersion = prefs.getInt(Settings.PREF_VERSION_CODE, 0)
+        val storedVersion = prefs.getInt(Settings.PREF_VERSION_CODE, 0)
+        // Muninn: Muninn's version codes are small (1, 2, 3, ...), but the upgrade steps below compare against
+        // HeliBoard's version codes. Translate, so HeliBoard's old steps don't run on Muninn's settings.
+        // Every Muninn version so far is based on HeliBoard 4.2 (4201); raise this when merging a newer HeliBoard.
+        val oldVersion = if (storedVersion in 1 until MUNINN_VERSION_CODE_LIMIT) HELIBOARD_BASE_VERSION_CODE else storedVersion
+        if (storedVersion == 2) undoMuninn011Upgrade(prefs)
         if (oldVersion == 0) {
             // fresh install -> no need to upgrade, as this does things like keeping old defaults which is on wanted on actual upgrade
             prefs.edit { putInt(Settings.PREF_VERSION_CODE, BuildConfig.VERSION_CODE) }

@@ -160,7 +160,7 @@ fun createPreferencesSettings(context: Context) = listOf(
     Setting(context, Settings.PREF_SHOW_EMOJI_KEY, R.string.show_emoji_key) {
         SwitchPreference(it, Defaults.PREF_SHOW_EMOJI_KEY) { KeyboardSwitcher.getInstance().reloadKeyboard() }
     },
-    Setting(context, Settings.PREF_SHOW_DPAD_KEY, R.string.show_dpad_key) {
+    Setting(context, Settings.PREF_SHOW_DPAD_KEY, R.string.muninn_show_dpad_key, R.string.muninn_show_dpad_key_summary) {
         SwitchPreference(it, Defaults.PREF_SHOW_DPAD_KEY) { KeyboardSwitcher.getInstance().reloadKeyboard() }
     },
     Setting(context, Settings.PREF_REMOVE_REDUNDANT_POPUPS,

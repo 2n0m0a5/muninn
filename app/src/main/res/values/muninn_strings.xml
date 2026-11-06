@@ -37,4 +37,7 @@
     <string name="muninn_appearance_description">Theme, colors, key shape, keyboard height</string>
     <string name="muninn_preferences_description">Keys, sound, vibration, clipboard</string>
     <string name="muninn_secondary_layouts_description">Symbols, numbers, number row, arrow pad and other extra keyboards</string>
+    <!-- Preferences: arrow-pad key -->
+    <string name="muninn_show_dpad_key">Arrow pad key</string>
+    <string name="muninn_show_dpad_key_summary">Show the four-arrow key next to the space bar on the symbols keyboard. Tap it for arrow keys, or hold and slide to pick one.</string>
 </resources>

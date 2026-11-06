@@ -131,7 +131,8 @@ enum class ToolbarMode {
 val toolbarKeyStrings = entries.associateWithTo(EnumMap(ToolbarKey::class.java)) { it.toString().lowercase(Locale.US) }
 
 val defaultToolbarPref by lazy {
-    val default = listOf(SETTINGS, VOICE, CLIPBOARD, UNDO, REDO, SELECT_WORD, COPY, PASTE, LEFT, RIGHT)
+    // Muninn: all four cursor arrows live here, in the top bar above the letters
+    val default = listOf(SETTINGS, VOICE, CLIPBOARD, UNDO, REDO, SELECT_WORD, COPY, PASTE, LEFT, UP, DOWN, RIGHT)
     val others = entries.filterNot { it in default || it == CLOSE_HISTORY }
     default.joinToString(Separators.ENTRY) { it.name + Separators.KV + true } + Separators.ENTRY +
             others.joinToString(Separators.ENTRY) { it.name + Separators.KV + false }
@@ -142,7 +143,8 @@ val defaultPinnedToolbarPref = entries.filterNot { it == CLOSE_HISTORY }.joinToS
 }
 
 val defaultClipboardToolbarPref by lazy {
-    val default = listOf(CLEAR_CLIPBOARD, UP, DOWN, LEFT, RIGHT, UNDO, CUT, COPY, PASTE, SELECT_WORD, CLOSE_HISTORY)
+    // Muninn: no cursor arrows above the clipboard; they are in the main top bar
+    val default = listOf(CLEAR_CLIPBOARD, UNDO, CUT, COPY, PASTE, SELECT_WORD, CLOSE_HISTORY)
     val others = entries.filterNot { it in default }
     default.joinToString(Separators.ENTRY) { it.name + Separators.KV + true } + Separators.ENTRY +
             others.joinToString(Separators.ENTRY) { it.name + Separators.KV + false }
