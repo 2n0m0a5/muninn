@@ -10,16 +10,30 @@ android {
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "helium314.keyboard"
+        applicationId = "app.muninn.keyboard"
         minSdk = 21
         targetSdk = 37
-        versionCode = 4201
-        versionName = "4.2"
+        versionCode = 1
+        versionName = "0.1.0"
         ndk {
             abiFilters.clear()
             abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64"))
         }
         proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+    }
+
+    // Muninn: one permanent signing key, so every new build installs as an update over the old one.
+    // The key is never committed; CI reads it from repository secrets, a local build from environment variables.
+    val muninnKeystore = System.getenv("MUNINN_KEYSTORE_FILE")?.let { file(it) }?.takeIf { it.exists() }
+    signingConfigs {
+        if (muninnKeystore != null) {
+            create("muninn") {
+                storeFile = muninnKeystore
+                storePassword = System.getenv("MUNINN_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("MUNINN_KEY_ALIAS")
+                keyPassword = System.getenv("MUNINN_KEY_PASSWORD")
+            }
+        }
     }
 
     buildTypes {
@@ -41,6 +55,7 @@ android {
             isMinifyEnabled = true
             isJniDebuggable = false
             applicationIdSuffix = ".debug"
+            if (muninnKeystore != null) signingConfig = signingConfigs.getByName("muninn")
         }
         create("runTests") { // build variant for running tests on CI that skips tests known to fail
             isMinifyEnabled = false
@@ -66,7 +81,7 @@ android {
             }
             variant.outputs.forEach { output ->
                 if (output is com.android.build.api.variant.impl.VariantOutputImpl) {
-                    output.outputFileName = "HeliBoard_${defaultConfig.versionName}-${variant.buildType}.apk"
+                    output.outputFileName = "Muninn_${defaultConfig.versionName}-${variant.buildType}.apk"
                 }
             }
         }

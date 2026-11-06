@@ -65,7 +65,9 @@ private constructor(val themeId: Int, @JvmField val mStyleId: Int) {
         const val THEME_PINK = "pink"
         const val THEME_SAND = "sand"
         const val THEME_VIOLETTE = "violette"
+        const val THEME_RUNE_NIGHT = "rune_night" // Muninn default
         fun getAvailableDefaultColors(prefs: SharedPreferences, isNight: Boolean) = listOfNotNull(
+            THEME_RUNE_NIGHT,
             if (!isNight) THEME_LIGHT else null, THEME_DARK,
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) THEME_DYNAMIC else null,
             if (prefs.getString(Settings.PREF_THEME_STYLE, Defaults.PREF_THEME_STYLE) == STYLE_HOLO) THEME_HOLO_WHITE else null,
@@ -322,6 +324,21 @@ private constructor(val themeId: Int, @JvmField val mStyleId: Int) {
                     Color.WHITE,
                     Color.BLACK,
                     Color.BLACK,
+                    keyboardBackground = backgroundImage
+                )
+                THEME_RUNE_NIGHT -> DefaultColors(
+                    themeStyle,
+                    hasBorders,
+                    "#E8B04B".toColorInt(), // accent: gold, reserved for things Muninn brings back
+                    "#0B0E16".toColorInt(), // background: raven black
+                    "#1C2334".toColorInt(), // letter keys
+                    "#141A28".toColorInt(), // functional keys
+                    "#1C2334".toColorInt(), // space bar
+                    "#E9ECF3".toColorInt(), // key text: ink
+                    "#8A93A8".toColorInt(), // hint letters
+                    "#E9ECF3".toColorInt(), // suggestion text
+                    "#8A93A8".toColorInt(), // space bar text
+                    "#E8B04B".toColorInt(), // gesture trail
                     keyboardBackground = backgroundImage
                 )
                 THEME_VIOLETTE -> DefaultColors(

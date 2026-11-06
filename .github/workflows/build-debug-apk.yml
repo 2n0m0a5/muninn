@@ -1,11 +1,12 @@
-name: Build debug APK
+name: Build Muninn APK
 
 on:
+  push:
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
@@ -19,16 +20,28 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v3
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
+      - name: Restore signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.MUNINN_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/muninn.jks"
+            echo "MUNINN_KEYSTORE_FILE=$RUNNER_TEMP/muninn.jks" >> "$GITHUB_ENV"
+          else
+            echo "::warning::No MUNINN_KEYSTORE_BASE64 secret: this APK uses a throwaway key and cannot update an earlier install."
+          fi
 
       - name: Build with Gradle
-        run: ./gradlew assembleDebug
+        env:
+          MUNINN_KEYSTORE_PASSWORD: ${{ secrets.MUNINN_KEYSTORE_PASSWORD }}
+          MUNINN_KEY_ALIAS: ${{ secrets.MUNINN_KEY_ALIAS }}
+          MUNINN_KEY_PASSWORD: ${{ secrets.MUNINN_KEY_PASSWORD }}
+        run: chmod +x gradlew && ./gradlew assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: HeliBoard-debug
+          name: Muninn-debug
           path: app/build/outputs/apk/debug/*-debug*.apk
 
       - name: Archive reports for failed job

@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Build
-import android.util.TypedValue
 import android.view.Gravity
 import helium314.keyboard.keyboard.KeyboardActionListener
 import helium314.keyboard.keyboard.KeyboardTheme
@@ -21,9 +20,8 @@ import helium314.keyboard.latin.utils.defaultToolbarPref
 object Defaults {
     fun initDynamicDefaults(context: Context) {
         PREF_GESTURE_DYNAMIC_PREVIEW_FOLLOW_SYSTEM = getTransitionAnimationScale(context) != 0.0f
-        val dm = context.resources.displayMetrics
-        val px600 = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 600f, dm)
-        PREF_POPUP_ON = dm.widthPixels >= px600 || dm.heightPixels >= px600
+        // Muninn: key preview popup off by default, like the user's Yandex setup
+        PREF_POPUP_ON = false
     }
 
     // must correspond to a file name
@@ -47,8 +45,8 @@ object Defaults {
     const val PREF_THEME_STYLE = KeyboardTheme.STYLE_MATERIAL
     fun PREF_ICON_STYLE(prefs: SharedPreferences) = prefs.getString(Settings.PREF_THEME_STYLE, PREF_THEME_STYLE)!!
     const val PREF_ACCENT_SHIFTED_ICON = false
-    const val PREF_THEME_COLORS = KeyboardTheme.THEME_LIGHT
-    const val PREF_THEME_COLORS_NIGHT = KeyboardTheme.THEME_DARK
+    const val PREF_THEME_COLORS = KeyboardTheme.THEME_RUNE_NIGHT
+    const val PREF_THEME_COLORS_NIGHT = KeyboardTheme.THEME_RUNE_NIGHT
     const val PREF_THEME_KEY_BORDERS = false
     @JvmField
     val PREF_THEME_DAY_NIGHT = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
@@ -62,7 +60,7 @@ object Defaults {
     const val PREF_INLINE_EMOJI_SEARCH = true
     const val PREF_SHOW_EMOJI_DESCRIPTIONS = true
     @JvmField
-    var PREF_POPUP_ON = true
+    var PREF_POPUP_ON = false
     const val PREF_AUTO_CORRECTION = true
     const val PREF_MORE_AUTO_CORRECTION = false
     const val PREF_AUTO_CORRECT_CONFIDENCE = 0.24f
@@ -145,7 +143,7 @@ object Defaults {
     @SuppressLint("RtlHardcoded")
     const val PREF_ONE_HANDED_GRAVITY = Gravity.LEFT
     const val PREF_ONE_HANDED_SCALE = 1f
-    const val PREF_SHOW_NUMBER_ROW = false
+    const val PREF_SHOW_NUMBER_ROW = true
     const val PREF_SHOW_NUMBER_ROW_IN_SYMBOLS = true
     const val PREF_LOCALIZED_NUMBER_ROW = true
     const val PREF_SHOW_NUMBER_ROW_HINTS = false
@@ -161,7 +159,7 @@ object Defaults {
     const val PREF_TOUCHPAD_SENSITIVITY = 50
     const val PREF_TOUCHPAD_EDGE_SCROLL = true
     const val PREF_ENABLE_CLIPBOARD_HISTORY = true
-    const val PREF_CLIPBOARD_HISTORY_RETENTION_TIME = 10 // minutes
+    const val PREF_CLIPBOARD_HISTORY_RETENTION_TIME = 121 // minutes; above 120 means no limit (Muninn keeps everything)
     const val PREF_CLIPBOARD_HISTORY_PINNED_FIRST = true
     const val PREF_CLIPBOARD_USE_FILES = true
     const val PREF_CLIPBOARD_FILES_SIZE_LIMIT = 20 // megabytes
