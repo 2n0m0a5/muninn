@@ -76,6 +76,7 @@ public class SettingsValues {
     public final boolean mShowsPopupHints;
     public final boolean mShowTldPopupKeys;
     public final boolean mSpaceForLangChange;
+    public final boolean mSpaceLongPressCursor;
     public final boolean mShowsEmojiKey;
     public final boolean mShowsDpadKey;
     public final boolean mVarToolbarDirection;
@@ -213,6 +214,7 @@ public class SettingsValues {
         mShowsPopupHints = prefs.getBoolean(Settings.PREF_SHOW_POPUP_HINTS, Defaults.PREF_SHOW_POPUP_HINTS);
         mShowTldPopupKeys = prefs.getBoolean(Settings.PREF_SHOW_TLD_POPUP_KEYS, Defaults.PREF_SHOW_TLD_POPUP_KEYS);
         mSpaceForLangChange = prefs.getBoolean(Settings.PREF_SPACE_TO_CHANGE_LANG, Defaults.PREF_SPACE_TO_CHANGE_LANG);
+        mSpaceLongPressCursor = prefs.getBoolean(Settings.PREF_SPACE_LONG_PRESS_CURSOR, Defaults.PREF_SPACE_LONG_PRESS_CURSOR);
         mShowsEmojiKey = prefs.getBoolean(Settings.PREF_SHOW_EMOJI_KEY, Defaults.PREF_SHOW_EMOJI_KEY);
         mShowsDpadKey = prefs.getBoolean(Settings.PREF_SHOW_DPAD_KEY, Defaults.PREF_SHOW_DPAD_KEY);
         mVarToolbarDirection = mToolbarMode != ToolbarMode.HIDDEN && prefs.getBoolean(Settings.PREF_VARIABLE_TOOLBAR_DIRECTION, Defaults.PREF_VARIABLE_TOOLBAR_DIRECTION);

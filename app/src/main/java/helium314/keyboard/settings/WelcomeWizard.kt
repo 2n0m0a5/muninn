@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-only
 package helium314.keyboard.settings
 
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.unit.sp
+import helium314.keyboard.latin.utils.MuninnRunic
 import android.content.Context
 import android.content.Intent
 import android.provider.Settings
@@ -79,10 +85,11 @@ fun WelcomeWizard(
             }
     }
     val useWideLayout = isWideScreen()
-    val stepBackgroundColor = Color(ContextCompat.getColor(ctx, R.color.setup_step_background))
-    val textColor = Color(ContextCompat.getColor(ctx, R.color.setup_text_action))
+    // Muninn: colours come from the app theme (Rune Night / Daylight) instead of HeliBoard's fixed setup colours
+    val stepBackgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh
+    val textColor = MaterialTheme.colorScheme.onSurface
     val textColorDim = textColor.copy(alpha = 0.5f)
-    val titleColor = Color(ContextCompat.getColor(ctx, R.color.setup_text_title))
+    val titleColor = MaterialTheme.colorScheme.onSurface
     val appName = stringResource(ctx.applicationInfo.labelRes)
     @Composable fun bigText() {
         val resource = if (step == 0) R.string.setup_welcome_title else R.string.setup_steps_title
@@ -106,12 +113,12 @@ fun WelcomeWizard(
     @Composable
     fun ColumnScope.Step(step: Int, title: String, instruction: String, actionText: String, icon: Painter, action: () -> Unit) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("1", color = if (step == 1) titleColor else textColorDim)
-            Text("2", color = if (step == 2) titleColor else textColorDim)
-            Text("3", color = if (step == 3) titleColor else textColorDim)
+            Text("1", color = if (step == 1) MaterialTheme.colorScheme.primary else textColorDim)
+            Text("2", color = if (step == 2) MaterialTheme.colorScheme.primary else textColorDim)
+            Text("3", color = if (step == 3) MaterialTheme.colorScheme.primary else textColorDim)
         }
         Column(Modifier
-            .background(color = stepBackgroundColor)
+            .background(color = stepBackgroundColor, shape = RoundedCornerShape(16.dp))
             .padding(16.dp)
         ) {
             Text(title)
@@ -119,12 +126,12 @@ fun WelcomeWizard(
         }
         Spacer(Modifier.height(4.dp))
         Row(
-            Modifier.clickable { action() }
+            Modifier.clip(RoundedCornerShape(16.dp)).clickable { action() }
                 .background(color = stepBackgroundColor)
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(icon, null, Modifier.padding(end = 6.dp).size(32.dp), tint = textColor)
+            Icon(icon, null, Modifier.padding(end = 6.dp).size(32.dp), tint = MaterialTheme.colorScheme.primary)
             Text(actionText, Modifier.weight(1f))
         }
     }
@@ -230,17 +237,33 @@ fun WelcomeWizard(
 
 @Composable
 fun Step0(onClick: () -> Unit) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Image(painterResource(R.drawable.setup_welcome_image), null)
-        Row(Modifier.clickable { onClick() }
-            .padding(top = 4.dp, start = 4.dp, end = 4.dp)
-            //.background(color = MaterialTheme.colorScheme.primary)
+    // Muninn: the feather, a carved rune line and one gold button, instead of HeliBoard's keyboard picture
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+        Image(
+            painterResource(R.drawable.ic_muninn_feather),
+            null,
+            Modifier.size(width = 72.dp, height = 150.dp).rotate(18f)
+        )
+        Spacer(Modifier.height(20.dp))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Box(Modifier.weight(1f).height(1.dp).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)))
+            Text("ᛗᚢᚾᛁᚾᚾ", fontFamily = MuninnRunic, fontSize = 22.sp, letterSpacing = 6.sp, color = MaterialTheme.colorScheme.primary)
+            Box(Modifier.weight(1f).height(1.dp).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)))
+        }
+        Spacer(Modifier.height(16.dp))
+        Text(
+            stringResource(R.string.muninn_welcome_tagline),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(28.dp))
+        Button(
+            onClick = onClick,
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.fillMaxWidth().height(54.dp)
         ) {
-            Spacer(Modifier.weight(1f))
-            Text(
-                stringResource(R.string.setup_start_action),
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
+            Text(stringResource(R.string.setup_start_action), style = MaterialTheme.typography.labelLarge.copy(fontSize = 16.sp))
         }
     }
 }

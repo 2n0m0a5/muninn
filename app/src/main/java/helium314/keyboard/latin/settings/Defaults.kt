@@ -42,12 +42,12 @@ object Defaults {
     }
 
     private const val DEFAULT_SIZE_SCALE = 1.0f // 100%
-    const val PREF_THEME_STYLE = KeyboardTheme.STYLE_MATERIAL
+    const val PREF_THEME_STYLE = KeyboardTheme.STYLE_ROUNDED // Muninn: rounded keys with a soft bottom edge
     fun PREF_ICON_STYLE(prefs: SharedPreferences) = prefs.getString(Settings.PREF_THEME_STYLE, PREF_THEME_STYLE)!!
     const val PREF_ACCENT_SHIFTED_ICON = false
     const val PREF_THEME_COLORS = KeyboardTheme.THEME_RUNE_NIGHT
     const val PREF_THEME_COLORS_NIGHT = KeyboardTheme.THEME_RUNE_NIGHT
-    const val PREF_THEME_KEY_BORDERS = false
+    const val PREF_THEME_KEY_BORDERS = true // Muninn: every key has its own shape, like the mockups
     @JvmField
     val PREF_THEME_DAY_NIGHT = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
     const val PREF_CUSTOM_ICON_NAMES = ""
@@ -102,7 +102,8 @@ object Defaults {
     const val PREF_EMOJI_KEY_FIT = true
     const val PREF_EMOJI_SKIN_TONE = ""
     @JvmField
-    val PREF_SPACE_HORIZONTAL_SWIPE = KeyboardActionListener.SwipeAction.MOVE_CURSOR.name
+    // Muninn: swipe the space bar sideways to change language (like Yandex); the cursor moves on long-press instead
+    val PREF_SPACE_HORIZONTAL_SWIPE = KeyboardActionListener.SwipeAction.SWITCH_LANGUAGE.name
     @JvmField
     val PREF_SPACE_VERTICAL_SWIPE = KeyboardActionListener.SwipeAction.NONE.name
     const val PREF_DELETE_SWIPE = true
@@ -154,7 +155,8 @@ object Defaults {
     const val PREF_SHOW_POPUP_HINTS = false
     const val PREF_SHOW_TLD_POPUP_KEYS = true
     const val PREF_MORE_POPUP_KEYS = "main"
-    const val PREF_SPACE_TO_CHANGE_LANG = true
+    const val PREF_SPACE_TO_CHANGE_LANG = false // Muninn: long-press space moves the cursor instead
+    const val PREF_SPACE_LONG_PRESS_CURSOR = true
     const val PREF_LANGUAGE_SWIPE_DISTANCE = 5
     const val PREF_TOUCHPAD_SENSITIVITY = 50
     const val PREF_TOUCHPAD_EDGE_SCROLL = true

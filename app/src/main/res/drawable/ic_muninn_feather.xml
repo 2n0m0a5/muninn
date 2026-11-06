@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Muninn brand mark: a raven feather with a gold edge and quill -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="40dp"
+    android:height="100dp"
+    android:viewportWidth="40"
+    android:viewportHeight="100">
+  <path
+      android:pathData="M20,2 C34,14 37,40 30,64 C27,74 23,84 20,98 C17,84 13,74 10,64 C3,40 6,14 20,2 Z"
+      android:fillColor="#25305A"
+      android:strokeColor="#E8B04B"
+      android:strokeWidth="1.4"/>
+  <path
+      android:pathData="M31,38 L37,35 L32,43 Z"
+      android:fillColor="#0B0E16"/>
+  <path
+      android:pathData="M20,8 L20,98"
+      android:strokeColor="#E8B04B"
+      android:strokeWidth="1.2"/>
+  <path
+      android:pathData="M20,22 L28,16 M20,32 L30,26 M20,44 L30,38 M20,22 L12,16 M20,32 L10,26 M20,44 L10,38 M20,56 L28,51 M20,56 L12,51"
+      android:strokeColor="#4D8FA3E0"
+      android:strokeWidth="0.6"/>
+</vector>

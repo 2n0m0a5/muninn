@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    SPDX-License-Identifier: GPL-3.0-only
+    Strings added by Muninn. Kept apart from HeliBoard's strings.xml so upstream updates merge cleanly.
+-->
+<resources>
+    <!-- About screen -->
+    <string name="muninn_github">Muninn on GitHub</string>
+    <string name="muninn_github_description">Source code, updates and problem reports</string>
+    <string name="muninn_built_on_heliboard">Built on HeliBoard</string>
+    <string name="muninn_built_on_heliboard_description">The open-source keyboard Muninn grew from</string>
+    <string name="muninn_heliboard_wiki">HeliBoard wiki</string>
+    <string name="muninn_heliboard_wiki_description">Most typing features work the same way in Muninn</string>
+    <string name="muninn_heliboard_community">HeliBoard community</string>
+    <string name="muninn_heliboard_community_description">Themes and layouts shared there also work in Muninn</string>
+    <!-- Advanced settings: space bar -->
+    <string name="muninn_space_long_press_cursor">Long-press space bar to move cursor</string>
+    <string name="muninn_space_long_press_cursor_summary">Hold the space bar, then slide your finger to move the cursor</string>
+    <!-- Keyboard preview button in settings -->
+    <string name="muninn_preview_show">Show keyboard</string>
+    <string name="muninn_preview_hide">Hide keyboard</string>
+    <string name="muninn_preview_hint">Try the keyboard here</string>
+    <!-- Welcome screen -->
+    <string name="muninn_welcome_tagline">Every day Muninn flies over your apps. What you save, he keeps, and brings back when it matters.</string>
+    <!-- Settings home -->
+    <string name="muninn_status_active">Active</string>
+    <string name="muninn_status_not_active">Not selected</string>
+    <string name="muninn_popular_settings">Popular settings</string>
+    <string name="muninn_popular_number_row">Number row</string>
+    <string name="muninn_popular_hints">Symbols on keys</string>
+    <string name="muninn_popular_key_preview">Key preview</string>
+    <string name="muninn_popular_clipboard">Clipboard history</string>
+    <string name="muninn_group_typing">Typing</string>
+    <string name="muninn_group_typing_raven">Huginn</string>
+    <string name="muninn_group_look">Look and feel</string>
+    <string name="muninn_group_more">More</string>
+    <string name="muninn_appearance_description">Theme, colors, key shape, keyboard height</string>
+    <string name="muninn_preferences_description">Keys, sound, vibration, clipboard</string>
+    <string name="muninn_secondary_layouts_description">Symbols, numbers, number row, arrow pad and other extra keyboards</string>
+</resources>

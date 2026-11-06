@@ -953,6 +953,8 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
 
             // Touchpad mode
             mTouchpadHandler.enableTouchpadMove(x, y, sListener);
+            // Muninn: while the cursor is being moved, the same slide must not also switch language
+            if (mTouchpadHandler.isInTouchpadMode()) return;
 
             // Vertical movement
             int stepsY = dY / sPointerStep;
@@ -1168,6 +1170,14 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
             sListener.onPressKey(popupKeyCode, 0, 1, HapticEvent.NO_HAPTICS);
             sListener.onCodeInput(popupKeyCode, Constants.NOT_A_COORDINATE, Constants.NOT_A_COORDINATE, false);
             sListener.onReleaseKey(popupKeyCode, false);
+            return;
+        }
+        // Muninn: long-press the space bar, then slide to move the cursor
+        if (code == Constants.CODE_SPACE && key.getPopupKeys() == null && mKeySwipeAllowed
+                && Settings.getValues().mSpaceLongPressCursor) {
+            mTouchpadHandler.startFromLongPress(mLastX, mLastY, sListener);
+            // treat it like a swipe, so lifting the finger ends cursor mode without typing a space
+            mInHorizontalSwipe = true;
             return;
         }
         if (code == KeyCode.LANGUAGE_SWITCH

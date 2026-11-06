@@ -55,10 +55,11 @@ fun AboutScreen(
         SettingsWithoutKey.APP,
         SettingsWithoutKey.VERSION,
         SettingsWithoutKey.LICENSE,
-        SettingsWithoutKey.HIDDEN_FEATURES,
+        SettingsWithoutKey.GITHUB,
+        SettingsWithoutKey.HELIBOARD,
         SettingsWithoutKey.GITHUB_WIKI,
         SettingsWithoutKey.COMMUNITY_LINKS,
-        SettingsWithoutKey.GITHUB,
+        SettingsWithoutKey.HIDDEN_FEATURES,
         SettingsWithoutKey.SAVE_LOG,
     )
     SearchSettingsScreen(
@@ -133,7 +134,7 @@ fun createAboutSettings(context: Context) = listOf(
             icon = R.drawable.ic_settings_about_hidden_features
         )
     },
-    Setting(context, SettingsWithoutKey.GITHUB_WIKI, R.string.about_wiki_link, R.string.about_wiki_link_description) {
+    Setting(context, SettingsWithoutKey.GITHUB_WIKI, R.string.muninn_heliboard_wiki, R.string.muninn_heliboard_wiki_description) {
         val ctx = LocalContext.current
         Preference(
             name = it.title,
@@ -147,7 +148,7 @@ fun createAboutSettings(context: Context) = listOf(
             icon = R.drawable.ic_settings_about_wiki
         )
     },
-    Setting(context, SettingsWithoutKey.COMMUNITY_LINKS, R.string.about_community_links, R.string.about_community_links_description) {
+    Setting(context, SettingsWithoutKey.COMMUNITY_LINKS, R.string.muninn_heliboard_community, R.string.muninn_heliboard_community_description) {
         val ctx = LocalContext.current
         Preference(
             name = it.title,
@@ -161,7 +162,21 @@ fun createAboutSettings(context: Context) = listOf(
             icon = R.drawable.ic_settings_about_community
         )
      },
-    Setting(context, SettingsWithoutKey.GITHUB, R.string.about_github_link) {
+    Setting(context, SettingsWithoutKey.GITHUB, R.string.muninn_github, R.string.muninn_github_description) {
+        val ctx = LocalContext.current
+        Preference(
+            name = it.title,
+            description = it.description,
+            onClick = {
+                val intent = Intent()
+                intent.data = Links.MUNINN_GITHUB.toUri()
+                intent.action = Intent.ACTION_VIEW
+                ctx.startActivity(intent)
+            },
+            icon = R.drawable.ic_settings_about_github
+        )
+    },
+    Setting(context, SettingsWithoutKey.HELIBOARD, R.string.muninn_built_on_heliboard, R.string.muninn_built_on_heliboard_description) {
         val ctx = LocalContext.current
         Preference(
             name = it.title,

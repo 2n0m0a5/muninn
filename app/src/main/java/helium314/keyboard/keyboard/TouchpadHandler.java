@@ -50,6 +50,26 @@ public class TouchpadHandler {
         mListener = null;
     }
 
+    public boolean isInTouchpadMode() {
+        return mInTouchpadMode;
+    }
+
+    /** Muninn: start cursor mode immediately after a long press on the space bar (no extra wait, haptic right away). */
+    public void startFromLongPress(int x, int y, KeyboardActionListener listener) {
+        sTouchpadModeActive = true;
+        mListener = listener;
+        mInTouchpadMode = true;
+        mTouchpadLastX = x;
+        mTouchpadLastY = y;
+        mTouchpadAccX = 0;
+        mTouchpadAccY = 0;
+        // pretend activation happened one long-press timeout ago, so onMove skips its debounce
+        mTouchpadActivationTime = SystemClock.elapsedRealtime() - Settings.getValues().mKeyLongpressTimeout;
+        mListener.onCustomRequest(KeyboardActionListener.CustomAction.TOUCHPAD_ON);
+        mListener.onCustomRequest(KeyboardActionListener.CustomAction.PERFORM_HAPTIC);
+        mHasVibrated = true;
+    }
+
     public void enableTouchpadMove(int x, int y, KeyboardActionListener listener) {
         if (!sTouchpadModeActive) return;
 

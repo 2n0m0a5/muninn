@@ -72,6 +72,6 @@
 
     <string name="english_ime_name" translatable="false">Muninn</string>
     <!-- App slogan-->
-    <string name="app_slogan" translatable="false">100% FOSS keyboard, based on AOSP.</string>
+    <string name="app_slogan" translatable="false">Remembers what you save. Open source and fully offline.</string>
 
 </resources>

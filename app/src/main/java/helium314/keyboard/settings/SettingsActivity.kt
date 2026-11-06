@@ -119,6 +119,7 @@ open class SettingsActivity : ComponentActivity(), SharedPreferences.OnSharedPre
                         }
                     else {
                         SettingsNavHost(onClickBack = { this.finish() })
+                        if (!showWelcomeWizard) KeyboardPreviewToggle()
                         if (showWelcomeWizard) {
                             WelcomeWizard(close = { showWelcomeWizard = false }, finish = this::finish)
                         } else if (crashReports.isNotEmpty()) {
