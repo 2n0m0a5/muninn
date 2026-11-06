@@ -16,6 +16,12 @@ SPDX-License-Identifier: Apache-2.0 AND GPL-3.0-only
     <!-- Muninn: loud reminders are sent as notifications -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <!-- Muninn Guard: lets Android stop asking to save battery for Muninn, so the guard is not put to sleep -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <!-- Muninn Guard: only granted by the person, once, from a computer (adb shell pm grant ...);
+         with it Muninn can put itself back as the keyboard after another one takes over -->
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS"
+        tools:ignore="ProtectedPermissions" />
 
     <application android:label="@string/english_ime_name"
             android:name="helium314.keyboard.latin.App"
@@ -112,6 +118,18 @@ SPDX-License-Identifier: Apache-2.0 AND GPL-3.0-only
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
         </receiver>
+
+        <!-- Muninn Guard (Layer 4): wakes when the default keyboard changes; the notification's buttons; the keyboard picker -->
+        <service android:name="MuninnGuardJobService"
+            android:permission="android.permission.BIND_JOB_SERVICE"
+            android:exported="false" />
+        <receiver android:name="MuninnGuardReceiver" android:exported="false" />
+        <activity android:name="MuninnSwitchBackActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="false"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
         <receiver android:name="DictionaryPackInstallBroadcastReceiver" android:exported="false">
             <intent-filter>

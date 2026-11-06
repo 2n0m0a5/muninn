@@ -74,4 +74,5 @@ class MuninnScreenshots {
         shoot("home_clips", 1240) { MainSettingsScreen({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}) }
     }
     @Test fun welcome() = shoot("welcome") { WelcomeWizard({}, {}) }
+    @Test fun guard() = shoot("guard", 1100) { helium314.keyboard.settings.screens.MuninnGuardScreen {} }
 }

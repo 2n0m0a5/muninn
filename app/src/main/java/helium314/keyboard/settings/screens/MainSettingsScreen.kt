@@ -64,6 +64,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.edit
 import helium314.keyboard.latin.ClipboardHistoryEntry
 import helium314.keyboard.latin.MuninnClips
+import helium314.keyboard.latin.MuninnGuard
 import helium314.keyboard.latin.MuninnReminders
 import helium314.keyboard.latin.R
 import helium314.keyboard.latin.common.Links
@@ -107,6 +108,7 @@ fun MainSettingsScreen(
     onClickTyping: () -> Unit = {},
     onClickMemory: () -> Unit = {},
     onClickLook: () -> Unit = {},
+    onClickGuard: () -> Unit = {},
 ) {
     var version by remember { mutableIntStateOf(0) } // bumped after Done / Later, so the lists are read again
     Surface(Modifier.fillMaxSize()) {
@@ -116,9 +118,10 @@ fun MainSettingsScreen(
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
             MuninnHeader()
+            OtherKeyboardBanner()
             ComingBackToday(version, onClickMemory) { version++ }
             CacheCard(version, onClickCache)
-            Spaces(onClickTyping, onClickMemory, onClickLook)
+            Spaces(onClickTyping, onClickMemory, onClickLook, onClickGuard)
             HowMuninnWorks()
             QuickSwitches()
             Footer(onClickAbout, onClickAdvanced)
@@ -160,6 +163,36 @@ private fun MuninnHeader() {
                 fontSize = 12.5.sp, fontWeight = FontWeight.Medium,
                 color = if (active) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f) else MaterialTheme.colorScheme.primary
             )
+        }
+    }
+}
+
+/** when another keyboard is in use: say so plainly and offer the way back (the cache is safe either way) */
+@Composable
+private fun OtherKeyboardBanner() {
+    val ctx = LocalContext.current
+    val imm = ctx.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+    var other by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            other = if (MuninnGuard.isMuninnCurrent(ctx) || !MuninnGuard.isMuninnEnabled(ctx)) null
+                else MuninnGuard.keyboardLabel(ctx, MuninnGuard.currentId(ctx))
+            delay(1000)
+        }
+    }
+    val name = other ?: return
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(MaterialTheme.colorScheme.surfaceContainer)
+            .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f), RoundedCornerShape(20.dp)).padding(start = 18.dp, end = 12.dp, top = 14.dp, bottom = 14.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Box(Modifier.size(10.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(stringResource(R.string.muninn_other_keyboard), fontSize = 14.5.sp, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.muninn_other_keyboard_text, name), fontSize = 12.5.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        GoldButton(stringResource(R.string.muninn_guard_switch_back), Modifier.width(124.dp), height = 40.dp) {
+            if (MuninnGuard.canSwitchBySelf(ctx) && MuninnGuard.switchBack(ctx)) Unit else imm.showInputMethodPicker()
         }
     }
 }
@@ -282,7 +315,7 @@ private fun CacheCard(version: Int, onClick: () -> Unit) {
 
 /** the four spaces, two by two */
 @Composable
-private fun Spaces(onTyping: () -> Unit, onMemory: () -> Unit, onLook: () -> Unit) {
+private fun Spaces(onTyping: () -> Unit, onMemory: () -> Unit, onLook: () -> Unit, onGuard: () -> Unit) {
     val ctx = LocalContext.current
     val languages = remember {
         SubtypeSettings.getEnabledSubtypes(true).map { it.locale().language.uppercase() }.distinct().joinToString(" · ")
@@ -297,10 +330,15 @@ private fun Spaces(onTyping: () -> Unit, onMemory: () -> Unit, onLook: () -> Uni
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             SpaceTile("ᛚ", stringResource(R.string.muninn_space_look), stringResource(R.string.muninn_space_look_sub),
                 MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f), Modifier.weight(1f), onClick = onLook)
-            SpaceTile("ᛉ", stringResource(R.string.muninn_guard), stringResource(R.string.muninn_space_guard_sub),
-                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f), Modifier.weight(1f), soon = true) {
-                Toast.makeText(ctx, R.string.muninn_guard_soon, Toast.LENGTH_SHORT).show()
+            val guardSub = remember {
+                if (!MuninnGuard.enabled(ctx)) ctx.getString(R.string.muninn_space_guard_off)
+                else MuninnGuard.stoppedThisWeek(ctx).let { n ->
+                    if (n == 0) ctx.getString(R.string.muninn_space_guard_sub)
+                    else ctx.resources.getQuantityString(R.plurals.muninn_guard_stopped_week, n, n)
+                }
             }
+            SpaceTile("ᛉ", stringResource(R.string.muninn_guard), guardSub,
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f), Modifier.weight(1f), onClick = onGuard)
         }
     }
 }

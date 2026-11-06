@@ -29,6 +29,7 @@ import helium314.keyboard.settings.screens.MuninnCacheScreen
 import helium314.keyboard.settings.screens.MuninnMemoryScreen
 import helium314.keyboard.settings.screens.MuninnTypingScreen
 import helium314.keyboard.settings.screens.MuninnLookScreen
+import helium314.keyboard.settings.screens.MuninnGuardScreen
 import helium314.keyboard.settings.screens.PersonalDictionariesScreen
 import helium314.keyboard.settings.screens.PersonalDictionaryScreen
 import helium314.keyboard.settings.screens.PreferencesScreen
@@ -87,6 +88,7 @@ fun SettingsNavHost(
                 onClickTyping = { navController.navigate(SettingsDestination.Typing) },
                 onClickMemory = { navController.navigate(SettingsDestination.Memory) },
                 onClickLook = { navController.navigate(SettingsDestination.Look) },
+                onClickGuard = { navController.navigate(SettingsDestination.Guard) },
                 onClickBack = ::goBack,
             )
         }
@@ -109,6 +111,9 @@ fun SettingsNavHost(
                 onClickLayouts = { navController.navigate(SettingsDestination.Layouts) },
                 onClickToolbar = { navController.navigate(SettingsDestination.Toolbar) },
             )
+        }
+        composable(SettingsDestination.Guard) {
+            MuninnGuardScreen(onClickBack = ::goBack)
         }
         composable(SettingsDestination.Look) {
             MuninnLookScreen(onClickBack = ::goBack, onClickAppearance = { navController.navigate(SettingsDestination.Appearance) })
@@ -201,6 +206,7 @@ object SettingsDestination {
     const val Memory = "muninn_memory"
     const val Typing = "muninn_typing"
     const val Look = "muninn_look"
+    const val Guard = "muninn_guard"
     val navTarget = MutableStateFlow(Settings)
 
     private val navScope = CoroutineScope(Dispatchers.Default)

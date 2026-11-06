@@ -397,4 +397,53 @@
     <string name="muninn_tour_delete">Swipe left from delete</string>
     <string name="muninn_tour_delete_text">Selects whole words to erase. Let go to erase them.</string>
     <string name="muninn_tour_again">Always on the home screen, under How Muninn works</string>
+
+    <!-- Muninn 0.6.0, Layer 4: Keyboard Guard -->
+    <string name="muninn_guard_intro">Keeps Muninn as your keyboard when Gboard or another one tries to take over.</string>
+    <string name="muninn_guard_ok">Muninn is your keyboard</string>
+    <string name="muninn_guard_ok_text">If another keyboard takes over, Muninn tells you and gets you back with one tap.</string>
+    <plurals name="muninn_guard_stopped_week">
+        <item quantity="one">%d takeover stopped this week</item>
+        <item quantity="other">%d takeovers stopped this week</item>
+    </plurals>
+    <string name="muninn_guard_not_ok">%s is your keyboard now</string>
+    <string name="muninn_guard_not_ok_text">Your cache is safe. Switch back and everything is where you left it.</string>
+    <string name="muninn_guard_off_in_list">Muninn is switched off in Android’s keyboard list. Turn it on there, then choose it.</string>
+    <string name="muninn_guard_switch_back">Switch back</string>
+    <string name="muninn_guard_back">Muninn is your keyboard again</string>
+    <string name="muninn_guard_keep">Keep Muninn as my keyboard</string>
+    <string name="muninn_guard_keep_sub">Watches for Gboard and other keyboards</string>
+    <string name="muninn_guard_by_itself_label">Switch back by itself</string>
+    <string name="muninn_guard_by_itself">Switch back without asking</string>
+    <string name="muninn_guard_by_itself_sub">Muninn puts itself back the moment another keyboard takes over</string>
+    <string name="muninn_guard_by_itself_how">Android lets a keyboard put itself back only after a one-time permission from a computer. Connect the phone with USB debugging on and run:</string>
+    <string name="muninn_guard_by_itself_without">Without it, Muninn asks you with a notification instead.</string>
+    <string name="muninn_guard_checks">So Android does not stop the guard</string>
+    <string name="muninn_guard_checks_hyperos">So HyperOS does not stop the guard</string>
+    <string name="muninn_guard_check_notifications">Notifications</string>
+    <string name="muninn_guard_check_notifications_ok">Allowed, so Muninn can tell you</string>
+    <string name="muninn_guard_check_notifications_fix">Needed to tell you when a keyboard takes over</string>
+    <string name="muninn_guard_check_battery">Battery</string>
+    <string name="muninn_guard_check_battery_ok">No restrictions for Muninn</string>
+    <string name="muninn_guard_check_battery_fix">Set to “No restrictions” so the guard is not put to sleep</string>
+    <string name="muninn_guard_check_autostart">Autostart</string>
+    <string name="muninn_guard_check_autostart_sub">Allow it for Muninn, so the guard works after a restart</string>
+    <string name="muninn_fix">Fix</string>
+    <string name="muninn_open">Open</string>
+    <string name="muninn_guard_what_happened">What happened</string>
+    <string name="muninn_guard_log_empty">Nothing yet. Muninn notes every takeover here.</string>
+    <string name="muninn_guard_log_switched">%s took over. Muninn switched back.</string>
+    <string name="muninn_guard_log_asked">%s took over. Muninn asked you.</string>
+    <string name="muninn_guard_channel_description">When another keyboard takes over</string>
+    <string name="muninn_guard_took_over_title">%s took over your keyboard</string>
+    <string name="muninn_guard_took_over_text">Tap to switch back to Muninn. Your cache is safe.</string>
+    <string name="muninn_guard_it_was_me">It was me</string>
+    <string name="muninn_guard_switched_title">Muninn switched back</string>
+    <string name="muninn_guard_switched_text">%s took over, so Muninn put itself back.</string>
+    <string name="muninn_guard_let_stay">Keep %s for an hour</string>
+    <string name="muninn_space_guard_off">Off</string>
+    <string name="muninn_other_keyboard">Another keyboard is in use</string>
+    <string name="muninn_other_keyboard_text">%s took over. Your cache is safe.</string>
+    <string name="muninn_guard_switched_off">Muninn is switched off</string>
+    <string name="muninn_guard_turn_on">Turn on Muninn</string>
 </resources>

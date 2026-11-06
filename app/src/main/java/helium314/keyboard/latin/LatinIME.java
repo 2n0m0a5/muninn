@@ -593,6 +593,10 @@ public class LatinIME extends InputMethodService implements
         emojiSearchFilter.addAction(EmojiSearchActivity.EMOJI_SEARCH_DONE_ACTION);
         ContextCompat.registerReceiver(this, mEmojiSearchReceiver, emojiSearchFilter, ContextCompat.RECEIVER_NOT_EXPORTED);
 
+        // Muninn, Layer 4: keep the guard waiting for the next change of the default keyboard
+        MuninnGuard.INSTANCE.schedule(this);
+        MuninnGuard.INSTANCE.cancelNotification(this);
+
         StatsUtils.onCreate(mSettings.getCurrent(), mRichImm);
     }
 

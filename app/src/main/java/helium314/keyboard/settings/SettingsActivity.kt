@@ -183,6 +183,7 @@ open class SettingsActivity : ComponentActivity(), SharedPreferences.OnSharedPre
 
     override fun onResume() {
         super.onResume()
+        helium314.keyboard.latin.MuninnGuard.schedule(this) // Muninn: keep the guard armed (also after HyperOS killed the app)
         paused = false
     }
 

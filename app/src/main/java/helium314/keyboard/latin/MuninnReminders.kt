@@ -337,7 +337,12 @@ class MuninnReminderReceiver : BroadcastReceiver() {
             MuninnReminders.ACTION_DONE -> if (clipId >= 0) MuninnReminders.done(context, clipId)
             MuninnReminders.ACTION_LATER -> if (clipId >= 0) MuninnReminders.later(context, clipId)
             MuninnReminders.ACTION_COPY -> if (clipId >= 0) MuninnReminders.copy(context, clipId)
-            Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_MY_PACKAGE_REPLACED -> MuninnReminders.scheduleNext(context)
+            Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_MY_PACKAGE_REPLACED -> {
+                MuninnReminders.scheduleNext(context)
+                // Layer 4: a restart or an update is when other keyboards most often take over
+                MuninnGuard.schedule(context)
+                MuninnGuard.check(context)
+            }
         }
     }
 }
