@@ -316,7 +316,7 @@ Afterwards Muninn restarts by itself, and swipe typing is on.</string>
     <string name="muninn_key_height">Key height</string>
     <string name="muninn_key_borders">Key borders</string>
     <string name="muninn_key_style">Key style</string>
-    <string name="muninn_key_style_sub">The shape of every key. Muninn’s own: small carved rune stones.</string>
+    <string name="muninn_key_style_sub">How every key looks. Muninn’s own: raven sheen, light across a feather.</string>
     <string name="style_name_Muninn">Muninn</string>
     <!-- Appearance: background picture and icons -->
     <string name="muninn_bg_title">Background picture</string>
@@ -533,9 +533,17 @@ Afterwards Muninn restarts by itself, and swipe typing is on.</string>
     <string name="muninn_translate_type_in">Type in %s</string>
     <string name="muninn_translate_unavailable">Translation isn’t available on this phone right now</string>
     <string name="muninn_translate_no_model">Translation isn’t available right now. Check the internet for the first download.</string>
-    <string name="muninn_translate_pair">Languages: tap for another target, hold to swap</string>
+    <string name="muninn_translate_from">Translate from %s. Tap to choose.</string>
+    <string name="muninn_translate_into">Translate into %s. Tap to choose.</string>
+    <string name="muninn_translate_swap">Swap the two languages</string>
+    <string name="muninn_translate_pick_from">Translate from</string>
+    <string name="muninn_translate_pick_into">Translate into</string>
+    <string name="muninn_translate_pick_note">A new language downloads once (about 30 MB), then works without internet.</string>
+    <string name="muninn_translate_yours">Your keyboard languages</string>
+    <string name="muninn_translate_all">All languages</string>
+    <string name="muninn_translate_offline">on phone</string>
     <string name="muninn_translate_keep">Keep the translation</string>
     <string name="muninn_translate_discard">Take the translation away</string>
     <string name="muninn_how_translate">Translate while you type</string>
-    <string name="muninn_how_translate_does">the translate button: type in your language, it lands translated · tap EN → RU for another language, hold to swap</string>
+    <string name="muninn_how_translate_does">the translate button: type in one language, it lands in another · tap either language to pick any of them, ⇄ swaps them</string>
 </resources>

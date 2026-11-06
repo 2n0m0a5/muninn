@@ -651,11 +651,14 @@ private fun styleName(style: String) = when (style) {
 private fun StyleKey(style: String, fill: Color, ink: Color, modifier: Modifier, label: String? = null, labelSize: Float = 14f) {
     val gold = MaterialTheme.colorScheme.primary
     when (style) {
-        KeyboardTheme.STYLE_MUNINN -> Box(modifier) {
-            val shape = RoundedCornerShape(6.dp)
-            Box(Modifier.matchParentSize().padding(top = 2.dp).clip(shape).background(androidx.compose.ui.graphics.lerp(fill, Color.Black, 0.5f)))
-            Box(Modifier.fillMaxWidth().fillMaxHeight().padding(bottom = 2.dp).clip(shape).background(fill), contentAlignment = Alignment.Center) {
-                Box(Modifier.align(Alignment.TopCenter).padding(top = 1.dp, start = 6.dp, end = 6.dp).fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.11f)))
+        KeyboardTheme.STYLE_MUNINN -> {
+            // Raven sheen: a dark tile with blue-to-violet light across it from the top left, like light on a raven feather
+            val shape = RoundedCornerShape(9.dp)
+            Box(modifier.clip(shape).background(fill)
+                .background(androidx.compose.ui.graphics.Brush.linearGradient(
+                    0f to Color(0x383A54A0), 0.45f to Color(0x1A4B3880), 0.7f to Color.Transparent))
+                .border(0.dp, Color.Transparent, shape), contentAlignment = Alignment.Center) {
+                Box(Modifier.align(Alignment.TopCenter).padding(start = 6.dp, end = 6.dp).fillMaxWidth().height(1.dp).background(Color(0x29968CFF)))
                 if (label != null) Text(label, color = if (label == "ᛗ") gold else ink, fontSize = labelSize.sp,
                     fontFamily = if (label == "ᛗ") MuninnRunic else null)
             }
@@ -715,7 +718,10 @@ private fun LivePreview(version: Int, height: Float) {
                 StyleKey(style, space, text, Modifier.matchParentSize())
                 Text("ᛗᚢᚾᛁᚾᚾ", fontFamily = MuninnRunic, color = text.copy(alpha = 0.5f), fontSize = 10.sp, letterSpacing = 4.sp)
             }
-            StyleKey(style, action, text, Modifier.weight(1.45f).height(keyH))
+            if (style == KeyboardTheme.STYLE_MUNINN) // Enter carries the feather's blue-violet in Muninn's style
+                Box(Modifier.weight(1.45f).height(keyH).clip(RoundedCornerShape(9.dp))
+                    .background(androidx.compose.ui.graphics.Brush.linearGradient(listOf(Color(0xFF3A54A0), Color(0xFF4B3880)))))
+            else StyleKey(style, action, text, Modifier.weight(1.45f).height(keyH))
         }
         Spacer(Modifier.height(0.dp))
     }

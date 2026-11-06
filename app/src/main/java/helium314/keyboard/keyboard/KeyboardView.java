@@ -358,12 +358,36 @@ public class KeyboardView extends View {
 
     private final Paint mMuninnPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final android.graphics.RectF mMuninnRect = new android.graphics.RectF();
+    private final java.util.HashMap<String, android.graphics.Shader> mMuninnShaders = new java.util.HashMap<>();
+
+    // the raven feather's colours: blue (#3A54A0) running into violet (#4B3880)
+    private static final int SHEEN_BLUE = 0x3A54A0;
+    private static final int SHEEN_VIOLET = 0x4B3880;
+
+    /** a CSS-style linear gradient at [degrees] (0 = upwards, 90 = to the right) across a w×h box, cached per size */
+    private android.graphics.Shader muninnGradient(final String kind, final float w, final float h, final float degrees,
+            final int[] colors, final float[] stops) {
+        final String id = kind + ':' + (int) w + 'x' + (int) h;
+        android.graphics.Shader shader = mMuninnShaders.get(id);
+        if (shader != null) return shader;
+        final double a = Math.toRadians(degrees);
+        final float dx = (float) Math.sin(a), dy = (float) -Math.cos(a);
+        final float half = (Math.abs(w * dx) + Math.abs(h * dy)) / 2f;
+        final float cx = w / 2f, cy = h / 2f;
+        shader = new android.graphics.LinearGradient(cx - dx * half, cy - dy * half, cx + dx * half, cy + dy * half,
+                colors, stops, android.graphics.Shader.TileMode.CLAMP);
+        if (mMuninnShaders.size() > 200) mMuninnShaders.clear();
+        mMuninnShaders.put(id, shader);
+        return shader;
+    }
+
+    private static int argb(final int alpha, final int rgb) { return (alpha << 24) | (rgb & 0xFFFFFF); }
 
     /**
-     * Muninn's own key style, "rune stones": each key is a small carved stone with a darker edge below it and a thin
-     * line of light along its top. Pressed, the stone sinks onto its edge and warms towards gold; Enter is a gold stone;
-     * a locked Shift keeps a gold rim. With key borders off, only Enter, the space bar and pressed keys show a stone.
-     * Returns how far the face moved down, so the label moves with it.
+     * Muninn's own key style, "Raven sheen": each key is a dark tile with a blue-to-violet sheen running across it from
+     * the top left, like light on a raven feather, and a faint line of light along its top. Pressed, the sheen brightens
+     * and a soft blue rim lights up. Enter carries the feather's own blue-violet, so gold stays only for what Muninn
+     * remembers. With key borders off, only Enter, the space bar and pressed keys show a tile.
      */
     private float drawMuninnKey(@NonNull final Key key, @NonNull final Canvas canvas) {
         final float d = getResources().getDisplayMetrics().density;
@@ -374,56 +398,68 @@ public class KeyboardView extends View {
         final boolean functional = !action && key.hasFunctionalBackground();
         final boolean space = type == Key.BACKGROUND_TYPE_SPACEBAR;
         final boolean borders = mColors.getHasKeyBorders();
-        final int gold = mColors.get(ColorType.CLIPBOARD_PIN);
         if (type == Key.BACKGROUND_TYPE_EMPTY && !pressed) return 0f;
         if (!borders && !action && !space && !pressed && !locked) return 0f;
 
-        int face = action ? mColors.get(ColorType.ACTION_KEY_BACKGROUND)
-                : functional ? mColors.get(ColorType.FUNCTIONAL_KEY_BACKGROUND)
-                : space ? mColors.get(ColorType.SPACE_BAR_BACKGROUND)
-                : mColors.get(ColorType.KEY_BACKGROUND);
-        if (!borders && !action && !space) face = androidx.core.graphics.ColorUtils.setAlphaComponent(gold, 0x40);
-        if (pressed) face = androidx.core.graphics.ColorUtils.blendARGB(face, gold, action ? 0.0f : 0.28f);
-        final int faceAlpha = android.graphics.Color.alpha(face);
-        final int edge = androidx.core.graphics.ColorUtils.setAlphaComponent(
-                androidx.core.graphics.ColorUtils.blendARGB(face, android.graphics.Color.BLACK, 0.5f), faceAlpha);
-
         final float w = key.getDrawWidth();
         final float h = key.getHeight();
-        final float inset = borders ? 0f : Math.min(w, h) * 0.06f;
-        final float radius = 7f * d;
-        final float depth = 2f * d;
-        final float sink = pressed ? depth * 0.75f : 0f;
-
-        // the stone's edge, showing below the face
+        final float radius = 10f * d;
+        mMuninnRect.set(0, 0, w, h);
         mMuninnPaint.setStyle(Paint.Style.FILL);
-        if (!pressed) {
-            mMuninnPaint.setColor(edge);
-            mMuninnRect.set(inset, inset + depth, w - inset, h - inset);
+        mMuninnPaint.setShader(null);
+
+        if (action) {
+            // Enter: the feather itself
+            mMuninnPaint.setShader(muninnGradient(pressed ? "enterP" : "enter", w, h, 135,
+                    pressed ? new int[] { argb(0xFF, 0x4A68C0), argb(0xFF, 0x6048A0) } : new int[] { argb(0xFF, SHEEN_BLUE), argb(0xFF, SHEEN_VIOLET) },
+                    new float[] { 0f, 1f }));
             canvas.drawRoundRect(mMuninnRect, radius, radius, mMuninnPaint);
+            mMuninnPaint.setShader(null);
+            mMuninnPaint.setColor(argb(0x24, 0xFFFFFF));
+            mMuninnPaint.setStrokeWidth(Math.max(1f, d));
+            canvas.drawLine(radius * 0.7f, d * 0.6f, w - radius * 0.7f, d * 0.6f, mMuninnPaint);
+            return 0f;
         }
-        // the face
+
+        // the tile
+        int face = functional ? mColors.get(ColorType.FUNCTIONAL_KEY_BACKGROUND)
+                : space ? mColors.get(ColorType.SPACE_BAR_BACKGROUND)
+                : mColors.get(ColorType.KEY_BACKGROUND);
+        if (!borders && !space) face = android.graphics.Color.TRANSPARENT;
         mMuninnPaint.setColor(face);
-        mMuninnRect.set(inset, inset + sink, w - inset, h - inset - depth + sink);
         canvas.drawRoundRect(mMuninnRect, radius, radius, mMuninnPaint);
-        // a thin line of light along the top, as on carved stone
-        if (!pressed && faceAlpha > 0x30) {
-            mMuninnPaint.setColor(android.graphics.Color.argb(action ? 0x50 : 0x1C, 255, 255, 255));
-            mMuninnPaint.setStrokeWidth(Math.max(1f, d * 0.8f));
-            final float y = inset + d * 0.9f;
-            canvas.drawLine(inset + radius, y, w - inset - radius, y, mMuninnPaint);
+
+        // the sheen: strongest at the top left, gone by two thirds of the way across
+        if (pressed) {
+            mMuninnPaint.setShader(muninnGradient("pressed", w, h, 115,
+                    new int[] { argb(0x8C, 0x5A78DC), argb(0x59, 0x6E50BE), argb(0x33, 0x1E1E3C) }, new float[] { 0f, 0.55f, 1f }));
+        } else if (!functional) {
+            final boolean wide = space || locked;
+            mMuninnPaint.setShader(muninnGradient(wide ? "wide" : "key", w, h, 115,
+                    new int[] { argb(wide ? 0x29 : 0x38, SHEEN_BLUE), argb(wide ? 0x14 : 0x1A, SHEEN_VIOLET), 0 },
+                    new float[] { 0f, wide ? 0.4f : 0.45f, wide ? 0.65f : 0.7f }));
         }
-        // gold rim when pressed or locked (Shift held on)
+        if (mMuninnPaint.getShader() != null) {
+            canvas.drawRoundRect(mMuninnRect, radius, radius, mMuninnPaint);
+            mMuninnPaint.setShader(null);
+        }
+
+        // a faint line of light along the top edge
+        mMuninnPaint.setColor(argb(pressed ? 0x59 : functional ? 0x14 : 0x29, 0x968CFF));
+        mMuninnPaint.setStrokeWidth(Math.max(1f, d));
+        canvas.drawLine(radius * 0.7f, d * 0.6f, w - radius * 0.7f, d * 0.6f, mMuninnPaint);
+
+        // pressed or held on (Shift locked): a soft blue rim
         if (pressed || locked) {
             mMuninnPaint.setStyle(Paint.Style.STROKE);
             mMuninnPaint.setStrokeWidth(Math.max(1f, 1.2f * d));
-            mMuninnPaint.setColor(androidx.core.graphics.ColorUtils.setAlphaComponent(gold, locked ? 0xE6 : 0x99));
+            mMuninnPaint.setColor(argb(pressed ? 0x8C : 0x66, 0x8FA3E0));
             final float half = mMuninnPaint.getStrokeWidth() / 2f;
             mMuninnRect.inset(half, half);
             canvas.drawRoundRect(mMuninnRect, radius, radius, mMuninnPaint);
             mMuninnPaint.setStyle(Paint.Style.FILL);
         }
-        return sink;
+        return 0f;
     }
 
     // Draw key background.
@@ -715,7 +751,10 @@ public class KeyboardView extends View {
     }
 
     private void setKeyIconColor(Key key, Drawable icon, Keyboard keyboard) {
-        if (key.hasActionKeyBackground()) {
+        if (key.hasActionKeyBackground() && this instanceof MainKeyboardView && KeyboardTheme.STYLE_MUNINN.equals(mColors.getThemeStyle())) {
+            // Muninn's style: Enter is the feather's blue-violet, so its arrow is white
+            icon.setColorFilter(new android.graphics.PorterDuffColorFilter(android.graphics.Color.WHITE, PorterDuff.Mode.SRC_IN));
+        } else if (key.hasActionKeyBackground()) {
             mColors.setColor(icon, ColorType.ACTION_KEY_ICON);
         } else if (key.isShift() && keyboard != null) {
             if (keyboard.mId.getElement().isAlphabetShifted())
