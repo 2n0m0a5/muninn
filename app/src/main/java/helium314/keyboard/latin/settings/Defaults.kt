@@ -160,6 +160,13 @@ object Defaults {
     const val PREF_MUNINN_SKIP_SENSITIVE = true // passwords and other clips apps mark as secret are never saved
     const val PREF_MUNINN_EXPIRE_CODES = true // one-time codes delete themselves after 10 minutes
     const val PREF_MUNINN_KEEP_DELETED = true // deleted clips wait 30 days in Recently deleted
+    const val PREF_MUNINN_REMINDERS = true
+    const val PREF_MUNINN_REMIND_STRENGTH = 1 // noticeable
+    const val PREF_MUNINN_REMIND_PER_DAY = 3
+    const val PREF_MUNINN_QUIET_HOURS = true
+    const val PREF_MUNINN_QUIET_START = 23 // hour of day
+    const val PREF_MUNINN_QUIET_END = 8
+    const val PREF_MUNINN_OFFER_LET_GO = true
     const val PREF_LANGUAGE_SWIPE_DISTANCE = 5
     const val PREF_TOUCHPAD_SENSITIVITY = 50
     const val PREF_TOUCHPAD_EDGE_SCROLL = true

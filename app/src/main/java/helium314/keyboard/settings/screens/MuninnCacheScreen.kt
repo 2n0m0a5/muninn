@@ -61,6 +61,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import helium314.keyboard.latin.ClipboardHistoryEntry
 import helium314.keyboard.latin.MuninnClips
+import helium314.keyboard.latin.MuninnReminderTimes
+import helium314.keyboard.latin.MuninnReminders
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.AlertDialog
 import helium314.keyboard.latin.R
 import helium314.keyboard.latin.database.ClipboardDao
 import helium314.keyboard.latin.utils.BackButton
@@ -72,6 +77,7 @@ import helium314.keyboard.latin.utils.previewDark
 private enum class CacheFilter(@StringRes val label: Int) {
     ALL(R.string.muninn_tab_all),
     PINNED(R.string.muninn_tab_pinned),
+    REMINDERS(R.string.muninn_filter_reminders),
     LINKS(R.string.muninn_filter_links),
     CODES(R.string.muninn_filter_codes),
     TRASH(R.string.muninn_tab_trash),
@@ -98,6 +104,7 @@ fun MuninnCacheScreen(onClickBack: () -> Unit) {
         val base = when (filter) {
             CacheFilter.ALL -> dao.getAll()
             CacheFilter.PINNED -> dao.getAll().filter { it.isPinned }
+            CacheFilter.REMINDERS -> dao.withReminders()
             CacheFilter.LINKS -> dao.getAll().filter { MuninnClips.isLink(it.text) }
             CacheFilter.CODES -> dao.getAll().filter { it.isCode }
             CacheFilter.TRASH -> dao.getTrash()
@@ -108,11 +115,12 @@ fun MuninnCacheScreen(onClickBack: () -> Unit) {
                 !clip.isCode && (clip.text?.contains(q, ignoreCase = true) == true
                         || MuninnClips.appLabel(ctx, clip.source)?.contains(q, ignoreCase = true) == true)
             }
-        matching.map { ClipView(it, it.isPinned, MuninnClips.metaLine(ctx, it)) }
+        matching.map { ClipView(it, it.isPinned, MuninnClips.metaLine(ctx, it), it.remindAt) }
     }
     val total = remember(version) { dao?.count() ?: 0 }
     val trashCount = remember(version) { dao?.trashCount() ?: 0 }
     val inTrash = filter == CacheFilter.TRASH
+    var remindFor by remember { mutableStateOf<ClipView?>(null) }
 
     Surface {
         Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
@@ -167,6 +175,7 @@ fun MuninnCacheScreen(onClickBack: () -> Unit) {
                     item(key = "h_pinned") { SectionHeader(R.string.muninn_section_pinned, gold = true) }
                     items(pinned, key = { it.clip.id }) { cv ->
                         ClipRow(cv, inTrash, onCopy = { copyClip(ctx, cv.clip); changed() },
+                            onRemind = { remindFor = cv },
                             onPin = { dao?.togglePinned(cv.clip.id); changed(R.string.muninn_unpinned) },
                             onDelete = { dao?.deleteById(cv.clip.id); changed(R.string.muninn_moved_to_deleted) },
                             onRestore = { })
@@ -177,6 +186,7 @@ fun MuninnCacheScreen(onClickBack: () -> Unit) {
                     ClipRow(
                         cv, inTrash,
                         onCopy = { copyClip(ctx, cv.clip); changed() },
+                        onRemind = { remindFor = cv },
                         onPin = {
                             val wasPinned = cv.pinned
                             dao?.togglePinned(cv.clip.id)
@@ -235,11 +245,114 @@ fun MuninnCacheScreen(onClickBack: () -> Unit) {
                 )
             }
         }
+        remindFor?.let { cv ->
+            ReminderSheet(
+                cv = cv,
+                onDismiss = { remindFor = null },
+                onSet = { preset, strength ->
+                    MuninnReminders.set(ctx, cv.clip.id, preset, strength)
+                    remindFor = null
+                    version++
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    cv.clip.remindAt?.let {
+                        Toast.makeText(ctx, ctx.getString(R.string.muninn_remind_set, MuninnReminders.describeTime(ctx, it)), Toast.LENGTH_SHORT).show()
+                    }
+                },
+                onRemove = {
+                    MuninnReminders.done(ctx, cv.clip.id)
+                    remindFor = null
+                    changed(R.string.muninn_remind_remove)
+                },
+            )
+        }
     }
 }
 
+/** Muninn: choose when and how strongly a clip comes back */
+@Composable
+private fun ReminderSheet(
+    cv: ClipView,
+    onDismiss: () -> Unit,
+    onSet: (MuninnReminderTimes.Preset, Int) -> Unit,
+    onRemove: () -> Unit,
+) {
+    val ctx = LocalContext.current
+    var strength by remember { mutableIntStateOf(if (cv.remindAt != null) cv.clip.remindStrength else MuninnReminders.defaultStrength(ctx)) }
+    var pendingPreset by remember { mutableStateOf<MuninnReminderTimes.Preset?>(null) }
+    // Loud reminders need permission to send notifications (Android 13+)
+    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        val preset = pendingPreset ?: return@rememberLauncherForActivityResult
+        onSet(preset, if (granted) strength else MuninnReminders.NOTICEABLE)
+        if (!granted) Toast.makeText(ctx, R.string.muninn_notifications_denied, Toast.LENGTH_LONG).show()
+    }
+    fun choose(preset: MuninnReminderTimes.Preset) {
+        if (strength == MuninnReminders.LOUD && android.os.Build.VERSION.SDK_INT >= 33 && !MuninnReminders.canNotify(ctx)) {
+            pendingPreset = preset
+            permission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        } else onSet(preset, strength)
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {},
+        dismissButton = {
+            Row {
+                if (cv.remindAt != null) TextButton(onClick = onRemove) { Text(stringResource(R.string.muninn_remind_remove)) }
+                TextButton(onClick = onDismiss) { Text(stringResource(android.R.string.cancel)) }
+            }
+        },
+        title = { Text(stringResource(R.string.muninn_remind_me), fontFamily = MuninnSerif, fontSize = 30.sp) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    if (cv.clip.isCode) MuninnClips.MASKED_CODE else cv.clip.text.orEmpty(),
+                    maxLines = 2, overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(stringResource(R.string.muninn_remind_how).uppercase(), style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 1.sp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                listOf(
+                    Triple(MuninnReminders.CALM, R.string.muninn_strength_calm, R.string.muninn_strength_calm_description),
+                    Triple(MuninnReminders.NOTICEABLE, R.string.muninn_strength_noticeable, R.string.muninn_strength_noticeable_description),
+                    Triple(MuninnReminders.LOUD, R.string.muninn_strength_loud, R.string.muninn_strength_loud_description),
+                ).forEach { (value, name, description) ->
+                    val selected = strength == value
+                    Column(
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
+                            .background(if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.14f) else MaterialTheme.colorScheme.surfaceContainerHigh)
+                            .border(BorderStroke(1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant), RoundedCornerShape(12.dp))
+                            .clickable { strength = value }
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                    ) {
+                        Text(stringResource(name), style = MaterialTheme.typography.bodyLarge,
+                            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
+                        Text(stringResource(description), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                Text(stringResource(R.string.muninn_remind_when).uppercase(), style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 1.sp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
+                listOf(
+                    R.string.muninn_remind_in_hour to MuninnReminderTimes.Preset.IN_ONE_HOUR,
+                    R.string.muninn_remind_tonight to MuninnReminderTimes.Preset.TONIGHT,
+                    R.string.muninn_remind_tomorrow to MuninnReminderTimes.Preset.TOMORROW_MORNING,
+                    R.string.muninn_remind_next_week to MuninnReminderTimes.Preset.NEXT_WEEK,
+                ).forEach { (label, preset) ->
+                    val time = MuninnReminders.describeTime(ctx, MuninnReminderTimes.presetTime(preset, System.currentTimeMillis()))
+                    Row(
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                            .clickable { choose(preset) }.padding(horizontal = 12.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(stringResource(label), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                        Text(time, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+        },
+    )
+}
+
 /** what one row shows, taken at the moment the list was read */
-private class ClipView(val clip: ClipboardHistoryEntry, val pinned: Boolean, val meta: String)
+private class ClipView(val clip: ClipboardHistoryEntry, val pinned: Boolean, val meta: String, val remindAt: Long?)
 
 @Composable
 private fun SectionHeader(@StringRes title: Int, gold: Boolean) {
@@ -259,6 +372,7 @@ private fun ClipRow(
     onPin: () -> Unit,
     onDelete: () -> Unit,
     onRestore: () -> Unit,
+    onRemind: () -> Unit = {},
 ) {
     val clip = cv.clip
     val gold = MaterialTheme.colorScheme.primary
@@ -297,6 +411,14 @@ private fun ClipRow(
                 Icon(painterResource(R.drawable.ic_muninn_restore), stringResource(R.string.muninn_cache_restore), tint = gold)
             }
         } else if (!clip.isCode) {
+            IconButton(onClick = onRemind) {
+                Icon(
+                    painterResource(R.drawable.ic_muninn_bell),
+                    stringResource(R.string.muninn_remind_me),
+                    tint = if (cv.remindAt != null) gold else MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
             IconButton(onClick = onPin) {
                 Icon(
                     painterResource(R.drawable.ic_muninn_pin),

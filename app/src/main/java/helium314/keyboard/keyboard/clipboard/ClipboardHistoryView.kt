@@ -93,6 +93,12 @@ class ClipboardHistoryView @JvmOverloads constructor(
             onCacheChanged = { refreshCacheView() }
             onPinChanged = { pinned -> feedback(if (pinned) R.string.muninn_pinned else R.string.muninn_unpinned); updateTabs() }
             onDeletedForever = { feedback(R.string.muninn_deleted_forever) }
+            onMenuAction = { message ->
+                keyboardActionListener.onPressKey(KeyCode.NOT_SPECIFIED, 0, 1, HapticEvent.KEY_LONG_PRESS)
+                keyboardActionListener.onReleaseKey(KeyCode.NOT_SPECIFIED, false)
+                android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_SHORT).show()
+                updateTabs()
+            }
         }
         setupTabs()
         placeholderView = findViewById(R.id.clipboard_empty_view)

@@ -92,6 +92,7 @@ fun MainSettingsScreen(
     onClickDictionaries: () -> Unit,
     onClickBack: () -> Unit,
     onClickCache: () -> Unit = {},
+    onClickReminders: () -> Unit = {},
 ) {
     SearchSettingsScreen(
         onClickBack = onClickBack,
@@ -128,7 +129,7 @@ fun MainSettingsScreen(
                     MuninnRow(R.drawable.ic_muninn_clipboard, stringResource(R.string.muninn_clipboard_settings),
                         stringResource(R.string.muninn_clipboard_settings_description), gold = true, onClick = onClickPreferences)
                     MuninnRow(R.drawable.ic_muninn_bell, stringResource(R.string.muninn_reminders),
-                        stringResource(R.string.muninn_reminders_description), gold = true, soon = true)
+                        stringResource(R.string.muninn_reminders_description), gold = true, onClick = onClickReminders)
                     MuninnRow(R.drawable.ic_muninn_share, stringResource(R.string.muninn_share_to),
                         stringResource(R.string.muninn_share_to_description), gold = true, soon = true, last = true)
                 }

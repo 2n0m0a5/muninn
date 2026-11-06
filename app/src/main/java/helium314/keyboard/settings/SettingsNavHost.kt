@@ -26,6 +26,7 @@ import helium314.keyboard.settings.screens.GestureTypingScreen
 import helium314.keyboard.settings.screens.LanguageScreen
 import helium314.keyboard.settings.screens.MainSettingsScreen
 import helium314.keyboard.settings.screens.MuninnCacheScreen
+import helium314.keyboard.settings.screens.MuninnRemindersScreen
 import helium314.keyboard.settings.screens.PersonalDictionariesScreen
 import helium314.keyboard.settings.screens.PersonalDictionaryScreen
 import helium314.keyboard.settings.screens.PreferencesScreen
@@ -80,11 +81,15 @@ fun SettingsNavHost(
                 onClickLayouts = { navController.navigate(SettingsDestination.Layouts) },
                 onClickDictionaries = { navController.navigate(SettingsDestination.Dictionaries) },
                 onClickCache = { navController.navigate(SettingsDestination.Cache) },
+                onClickReminders = { navController.navigate(SettingsDestination.Reminders) },
                 onClickBack = ::goBack,
             )
         }
         composable(SettingsDestination.Cache) {
             MuninnCacheScreen(onClickBack = ::goBack)
+        }
+        composable(SettingsDestination.Reminders) {
+            MuninnRemindersScreen(onClickBack = ::goBack)
         }
         composable(SettingsDestination.About) {
             AboutScreen(onClickBack = ::goBack)
@@ -170,6 +175,7 @@ object SettingsDestination {
     const val Layouts = "layouts"
     const val Dictionaries = "dictionaries"
     const val Cache = "muninn_cache"
+    const val Reminders = "muninn_reminders"
     val navTarget = MutableStateFlow(Settings)
 
     private val navScope = CoroutineScope(Dispatchers.Default)

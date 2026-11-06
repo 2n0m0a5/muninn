@@ -17,6 +17,10 @@ import androidx.recyclerview.widget.RecyclerView
 import helium314.keyboard.latin.ClipboardHistoryEntry
 import helium314.keyboard.latin.ClipboardHistoryManager
 import helium314.keyboard.latin.MuninnClips
+import helium314.keyboard.latin.MuninnReminderTimes
+import helium314.keyboard.latin.MuninnReminders
+import android.view.MenuItem
+import android.widget.PopupMenu
 import helium314.keyboard.latin.R
 import helium314.keyboard.latin.common.ColorType
 import helium314.keyboard.latin.settings.Settings
@@ -36,6 +40,9 @@ class ClipboardAdapter(
 
     /** Muninn: called after a deleted clip was removed for good */
     var onDeletedForever: () -> Unit = { }
+
+    /** Muninn: called after an action from the long-press menu, with the message to show */
+    var onMenuAction: (String) -> Unit = { }
 
     var pinnedIconResId = 0
     var itemBackgroundId = 0
@@ -142,11 +149,58 @@ class ClipboardAdapter(
                 onCacheChanged()
                 onDeletedForever()
             } else {
-                manager.toggleClipPinned(view.tag as Long)
-                if (manager.cacheView != ClipboardHistoryManager.CacheView.ALL) onCacheChanged()
-                onPinChanged(manager.getHistoryEntryContent(view.tag as Long)?.isPinned == true)
+                showMenu(view, view.tag as Long, manager)
             }
             return true
+        }
+
+        /** Muninn: the long-press menu: Pin, Remind me, Remove reminder, Delete */
+        private fun showMenu(anchor: View, id: Long, manager: ClipboardHistoryManager) {
+            val ctx = anchor.context
+            val clip = manager.getHistoryEntryContent(id) ?: return
+            anchor.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
+            val menu = PopupMenu(ctx, anchor)
+            val pinItem = menu.menu.add(if (clip.isPinned) R.string.muninn_cache_unpin else R.string.muninn_cache_pin)
+            val presets = mutableMapOf<MenuItem, MuninnReminderTimes.Preset>()
+            if (!clip.isCode) {
+                val remind = menu.menu.addSubMenu(R.string.muninn_remind_me)
+                listOf(
+                    R.string.muninn_remind_in_hour to MuninnReminderTimes.Preset.IN_ONE_HOUR,
+                    R.string.muninn_remind_tonight to MuninnReminderTimes.Preset.TONIGHT,
+                    R.string.muninn_remind_tomorrow to MuninnReminderTimes.Preset.TOMORROW_MORNING,
+                    R.string.muninn_remind_next_week to MuninnReminderTimes.Preset.NEXT_WEEK,
+                ).forEach { (label, preset) -> presets[remind.add(label)] = preset }
+            }
+            val removeReminder = if (clip.remindAt != null) menu.menu.add(R.string.muninn_remind_remove) else null
+            val deleteItem = if (!clip.isPinned) menu.menu.add(R.string.muninn_cache_delete) else null
+            menu.setOnMenuItemClickListener { item ->
+                when {
+                    item == pinItem -> {
+                        manager.toggleClipPinned(id)
+                        if (manager.cacheView != ClipboardHistoryManager.CacheView.ALL) onCacheChanged()
+                        onPinChanged(manager.getHistoryEntryContent(id)?.isPinned == true)
+                    }
+                    item in presets -> {
+                        MuninnReminders.set(ctx, id, presets[item]!!)
+                        val at = manager.getHistoryEntryContent(id)?.remindAt
+                        notifyDataSetChanged()
+                        if (at != null) onMenuAction(ctx.getString(R.string.muninn_remind_set, MuninnReminders.describeTime(ctx, at)))
+                    }
+                    item == removeReminder -> {
+                        MuninnReminders.done(ctx, id)
+                        notifyDataSetChanged()
+                        onMenuAction(ctx.getString(R.string.muninn_remind_remove))
+                    }
+                    item == deleteItem -> {
+                        manager.clipboardDaoDelete(id)
+                        onCacheChanged()
+                        onMenuAction(ctx.getString(R.string.muninn_moved_to_deleted))
+                    }
+                    else -> return@setOnMenuItemClickListener false // a submenu opening
+                }
+                true
+            }
+            menu.show()
         }
     }
 }

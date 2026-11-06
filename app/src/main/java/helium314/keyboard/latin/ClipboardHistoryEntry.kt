@@ -30,7 +30,15 @@ class ClipboardHistoryEntry(
     var deletedAt: Long? = null,
     /** Muninn: when the clip deletes itself (ms), used for one-time codes; null = kept */
     val expiresAt: Long? = null,
+    /** Muninn: when Muninn should bring this clip back (ms); null = no reminder */
+    var remindAt: Long? = null,
+    /** Muninn: how strongly: [MuninnReminders.CALM], [MuninnReminders.NOTICEABLE] or [MuninnReminders.LOUD] */
+    var remindStrength: Int = 1,
+    /** Muninn: how many times "Later" was chosen for the current reminder */
+    var remindSkips: Int = 0,
 ) : Comparable<ClipboardHistoryEntry> {
+    /** Muninn: has a reminder that is due */
+    fun isDue(now: Long) = remindAt.let { it != null && it <= now } && deletedAt == null
     /** Muninn: one-time codes are shown hidden and delete themselves */
     val isCode get() = expiresAt != null
 

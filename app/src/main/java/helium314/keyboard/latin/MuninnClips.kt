@@ -68,6 +68,9 @@ object MuninnClips {
             }
             else -> parts.add(relative(entry.timeStamp, now))
         }
+        val remindAt = entry.remindAt
+        if (remindAt != null && deletedAt == null)
+            parts.add(context.getString(R.string.muninn_reminder_meta, MuninnReminders.describeTime(context, remindAt, now)))
         return parts.joinToString(" · ")
     }
 

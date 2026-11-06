@@ -870,6 +870,15 @@ public class LatinIME extends InputMethodService implements
     void onStartInputViewInternal(final EditorInfo editorInfo, final boolean restarting) {
         super.onStartInputView(editorInfo, restarting);
 
+        // Muninn: when the keyboard opens (not when an app merely restarts input), pick one due reminder.
+        // Never in password fields.
+        if (!restarting) {
+            final boolean password = editorInfo != null
+                    && helium314.keyboard.latin.utils.InputTypeUtils.isPasswordInputType(editorInfo.inputType);
+            mMuninnReminder = password ? null : MuninnReminders.INSTANCE.pickForKeyboard(this, System.currentTimeMillis());
+            mMuninnReminderShown = false;
+        }
+
         setGestureDataGatheringMode(editorInfo, restarting);
 
         mDictionaryFacilitator.onStartInput();
@@ -1001,7 +1010,7 @@ public class LatinIME extends InputMethodService implements
         if (!mHandler.hasPendingResumeSuggestions()) {
             mHandler.cancelUpdateSuggestionStrip();
             setNeutralSuggestionStrip();
-            if (hasSuggestionStripView() && currentSettingsValues.mAutoShowToolbar && !tryShowClipboardSuggestion()) {
+            if (hasSuggestionStripView() && currentSettingsValues.mAutoShowToolbar && mMuninnReminder == null && !tryShowClipboardSuggestion()) {
                 mSuggestionStripView.setToolbarVisibility(true);
             }
         }
@@ -1565,6 +1574,51 @@ public class LatinIME extends InputMethodService implements
      *  Checks if a recent clipboard suggestion is available. If available, it is set in suggestion strip.
      *  returns whether a clipboard suggestion has been set.
      */
+    // ---- Muninn: reminder chip ----
+    private ClipboardHistoryEntry mMuninnReminder = null;
+    private boolean mMuninnReminderShown = false;
+
+    private final MuninnReminderChip.Actions mMuninnReminderActions = new MuninnReminderChip.Actions() {
+        @Override public void onPaste(@NonNull final ClipboardHistoryEntry clip) {
+            if (clip.getText() != null) onTextInput(clip.getText());
+            MuninnReminders.INSTANCE.done(LatinIME.this, clip.getId());
+            closeMuninnReminder(R.string.muninn_reminder_done_feedback);
+        }
+        @Override public void onDone(@NonNull final ClipboardHistoryEntry clip) {
+            MuninnReminders.INSTANCE.done(LatinIME.this, clip.getId());
+            closeMuninnReminder(R.string.muninn_reminder_done_feedback);
+        }
+        @Override public void onLater(@NonNull final ClipboardHistoryEntry clip) {
+            MuninnReminders.INSTANCE.later(LatinIME.this, clip.getId());
+            final Long next = clip.getRemindAt();
+            mMuninnReminder = null;
+            if (next != null)
+                android.widget.Toast.makeText(LatinIME.this, getString(R.string.muninn_reminder_later_feedback,
+                        MuninnReminders.INSTANCE.describeTime(LatinIME.this, next, System.currentTimeMillis())), android.widget.Toast.LENGTH_SHORT).show();
+            setNeutralSuggestionStrip();
+        }
+        @Override public void onLetGo(@NonNull final ClipboardHistoryEntry clip) {
+            MuninnReminders.INSTANCE.letGo(LatinIME.this, clip.getId());
+            closeMuninnReminder(R.string.muninn_reminder_let_go_feedback);
+        }
+    };
+
+    private void closeMuninnReminder(final int message) {
+        mMuninnReminder = null;
+        android.widget.Toast.makeText(this, message, android.widget.Toast.LENGTH_SHORT).show();
+        setNeutralSuggestionStrip();
+    }
+
+    /** Muninn: shows the reminder picked when the keyboard opened, if there is one. Returns whether it is shown. */
+    private boolean tryShowMuninnReminder() {
+        if (mMuninnReminder == null || !hasSuggestionStripView()) return false;
+        final View chip = MuninnReminderChip.INSTANCE.create(this, mMuninnReminder, !mMuninnReminderShown, mMuninnReminderActions);
+        mMuninnReminderShown = true;
+        mSuggestionStripView.setExternalSuggestionView(chip, false);
+        mSuggestionStripView.setToolbarVisibility(false);
+        return true;
+    }
+
     public boolean tryShowClipboardSuggestion() {
         if (!hasSuggestionStripView()) return false;
         View clipboardView = mClipboardHistoryManager.getClipboardSuggestionView(getCurrentInputEditorInfo(), mSuggestionStripView);
@@ -1583,6 +1637,7 @@ public class LatinIME extends InputMethodService implements
     @Override
     public void setNeutralSuggestionStrip() {
         final SettingsValues currentSettings = mSettings.getCurrent();
+        if (tryShowMuninnReminder()) return; // Muninn: a reminder comes first
         if (tryShowClipboardSuggestion()) {
             // clipboard suggestion has been set
             if (hasSuggestionStripView() && currentSettings.mAutoHideToolbar)

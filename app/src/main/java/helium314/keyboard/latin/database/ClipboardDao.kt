@@ -9,6 +9,7 @@ import android.net.Uri
 import android.os.SystemClock
 import android.webkit.MimeTypeMap
 import androidx.core.content.FileProvider
+import androidx.core.database.getIntOrNull
 import androidx.core.database.getLongOrNull
 import androidx.core.database.getStringOrNull
 import helium314.keyboard.latin.ClipboardHistoryEntry
@@ -43,7 +44,7 @@ class ClipboardDao private constructor(private val db: Database) {
         db.readableDatabase.query(
             TABLE,
             arrayOf(COLUMN_ID, COLUMN_TIMESTAMP, COLUMN_PINNED, COLUMN_TEXT, COLUMN_FILE, COLUMN_MIME_TYPE,
-                COLUMN_SOURCE, COLUMN_DELETED, COLUMN_EXPIRES),
+                COLUMN_SOURCE, COLUMN_DELETED, COLUMN_EXPIRES, COLUMN_REMIND_AT, COLUMN_REMIND_STRENGTH, COLUMN_REMIND_SKIPS),
             null,
             null,
             null,
@@ -61,6 +62,9 @@ class ClipboardDao private constructor(private val db: Database) {
                     it.getStringOrNull(6),
                     it.getLongOrNull(7),
                     it.getLongOrNull(8),
+                    it.getLongOrNull(9),
+                    it.getIntOrNull(10) ?: 1,
+                    it.getIntOrNull(11) ?: 0,
                 )
                 if (entry.deletedAt != null) trash.add(entry) else add(entry)
             }
@@ -255,6 +259,23 @@ class ClipboardDao private constructor(private val db: Database) {
 
     fun emptyTrash() = deleteForever(trash.toList())
 
+    // ---- Muninn: reminders ----
+
+    fun setReminder(id: Long, at: Long?, strength: Int = 1, skips: Int = 0) = synchronized(this) {
+        val entry = (cache + trash).firstOrNull { it.id == id } ?: return@synchronized
+        entry.remindAt = at
+        entry.remindStrength = strength
+        entry.remindSkips = if (at == null) 0 else skips
+        val cv = ContentValues(3)
+        if (at == null) cv.putNull(COLUMN_REMIND_AT) else cv.put(COLUMN_REMIND_AT, at)
+        cv.put(COLUMN_REMIND_STRENGTH, strength)
+        cv.put(COLUMN_REMIND_SKIPS, entry.remindSkips)
+        db.writableDatabase.update(TABLE, cv, "$COLUMN_ID = ${entry.id}", null)
+    }
+
+    /** live clips with a reminder, soonest first */
+    fun withReminders(): List<ClipboardHistoryEntry> = cache.filter { it.remindAt != null }.sortedBy { it.remindAt }
+
     /** one-time codes past their time, and clips deleted more than [TRASH_DAYS] days ago */
     private fun removeExpired() {
         val now = System.currentTimeMillis()
@@ -367,6 +388,12 @@ class ClipboardDao private constructor(private val db: Database) {
         const val ADD_DELETED_COLUMN = "ALTER TABLE $TABLE ADD COLUMN $COLUMN_DELETED INTEGER"
         const val ADD_EXPIRES_COLUMN = "ALTER TABLE $TABLE ADD COLUMN $COLUMN_EXPIRES INTEGER"
         const val TRASH_DAYS = 30
+        private const val COLUMN_REMIND_AT = "REMIND_AT" // when to bring the clip back
+        private const val COLUMN_REMIND_STRENGTH = "REMIND_STRENGTH" // 0 calm, 1 noticeable, 2 loud
+        private const val COLUMN_REMIND_SKIPS = "REMIND_SKIPS" // how often "Later" was chosen
+        const val ADD_REMIND_AT_COLUMN = "ALTER TABLE $TABLE ADD COLUMN $COLUMN_REMIND_AT INTEGER"
+        const val ADD_REMIND_STRENGTH_COLUMN = "ALTER TABLE $TABLE ADD COLUMN $COLUMN_REMIND_STRENGTH INTEGER"
+        const val ADD_REMIND_SKIPS_COLUMN = "ALTER TABLE $TABLE ADD COLUMN $COLUMN_REMIND_SKIPS INTEGER"
 
         private var instance: ClipboardDao? = null
         lateinit var clipFilesDir: File

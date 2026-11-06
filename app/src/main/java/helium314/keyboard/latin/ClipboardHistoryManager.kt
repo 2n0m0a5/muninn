@@ -182,6 +182,9 @@ class ClipboardHistoryManager(
 
     fun restoreClip(id: Long) = clipboardDao?.restore(id)
 
+    /** Muninn: delete one clip from the long-press menu (it goes to Deleted) */
+    fun clipboardDaoDelete(id: Long) = clipboardDao?.deleteById(id)
+
     fun deleteClipForever(id: Long) = clipboardDao?.getTrash()?.firstOrNull { it.id == id }?.let { clipboardDao?.deleteForever(listOf(it)) }
 
     fun emptyTrash() = clipboardDao?.emptyTrash()
