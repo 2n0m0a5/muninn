@@ -100,7 +100,9 @@ fun TextCorrectionScreen(
     SearchSettingsScreen(
         onClickBack = onClickBack,
         title = stringResource(R.string.settings_screen_correction),
-        settings = items
+        settings = items,
+        intro = stringResource(R.string.muninn_intro_correction),
+        essentials = setOf(Settings.PREF_AUTO_CORRECTION, Settings.PREF_SHOW_SUGGESTIONS, Settings.PREF_BIGRAM_PREDICTIONS, Settings.PREF_AUTO_CAP, Settings.PREF_KEY_USE_DOUBLE_SPACE_PERIOD, SettingsWithoutKey.EDIT_PERSONAL_DICTIONARY),
     )
 }
 

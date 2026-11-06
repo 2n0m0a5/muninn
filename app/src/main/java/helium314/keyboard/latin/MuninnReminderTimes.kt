@@ -57,6 +57,23 @@ object MuninnReminderTimes {
     fun laterTime(now: Long, quietStart: Int, quietEnd: Int, quietEnabled: Boolean, tz: TimeZone = TimeZone.getDefault()) =
         outsideQuietHours(now + LATER_DELAY, quietStart, quietEnd, quietEnabled, tz)
 
+    /**
+     * Gaps between the times a reminder comes back: it starts close together and spreads out, so it is noticed
+     * without becoming noise. Each gap is shaken by up to 30% either way, so it never turns into a predictable
+     * rhythm the brain learns to ignore (habituation).
+     */
+    private val GAPS_HOURS = longArrayOf(3, 5, 9, 24, 48, 72, 120, 168)
+
+    /** when a reminder comes back after it was shown [timesShown] times (1 = it was just shown for the first time) */
+    fun nextOccurrence(
+        timesShown: Int, now: Long, random: java.util.Random,
+        quietStart: Int, quietEnd: Int, quietEnabled: Boolean, tz: TimeZone = TimeZone.getDefault()
+    ): Long {
+        val gap = GAPS_HOURS[(timesShown - 1).coerceIn(0, GAPS_HOURS.lastIndex)] * HOUR
+        val jitter = 0.7 + random.nextDouble() * 0.6 // 0.7 .. 1.3
+        return outsideQuietHours(now + (gap * jitter).toLong(), quietStart, quietEnd, quietEnabled, tz)
+    }
+
     /** a number for the calendar day of [time], used to count reminders per day */
     fun dayKey(time: Long, tz: TimeZone = TimeZone.getDefault()): Int =
         cal(time, tz).let { it.get(Calendar.YEAR) * 1000 + it.get(Calendar.DAY_OF_YEAR) }

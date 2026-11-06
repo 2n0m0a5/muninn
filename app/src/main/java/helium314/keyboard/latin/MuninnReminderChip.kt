@@ -23,15 +23,15 @@ import helium314.keyboard.latin.settings.Settings
  *
  *   [ (bell) Flight check-in closes 21:40      (check) (clock) (leaf) ]
  *
- * Tapping the text pastes the clip and marks the reminder done. The three buttons are Done, Later and Let go.
- * Calm: quiet outline. Noticeable and Loud: gold, one slow glow and two soft taps when it first appears.
+ * Tapping the text pastes the clip and marks the reminder done. The three buttons are Done, Later and Stop reminding.
+ * Gold, one slow glow and two soft taps when it first appears (only ever when the keyboard opens, never mid-typing).
  */
 object MuninnReminderChip {
     interface Actions {
         fun onPaste(clip: ClipboardHistoryEntry)
         fun onDone(clip: ClipboardHistoryEntry)
         fun onLater(clip: ClipboardHistoryEntry)
-        fun onLetGo(clip: ClipboardHistoryEntry)
+        fun onStop(clip: ClipboardHistoryEntry)
     }
 
     fun create(context: Context, clip: ClipboardHistoryEntry, firstTime: Boolean, actions: Actions): View {
@@ -39,8 +39,8 @@ object MuninnReminderChip {
         val density = context.resources.displayMetrics.density
         fun dp(v: Int) = (v * density).toInt()
         val gold = colors.get(ColorType.CLIPBOARD_PIN)
-        val calm = clip.remindStrength == MuninnReminders.CALM
-        val askToLetGo = clip.remindSkips >= MuninnReminders.SKIPS_BEFORE_ASKING && MuninnReminders.offerLetGo(context)
+        val calm = false // every chip is the noticeable kind now; the calm signal is the gold clipboard button
+        val askToLetGo = clip.remindSkips >= MuninnReminders.SKIPS_BEFORE_ASKING && MuninnReminders.askIfStillWanted(context)
         val textColor = if (calm) colors.get(ColorType.KEY_TEXT) else gold
 
         val pill = GradientDrawable().apply {
@@ -94,7 +94,7 @@ object MuninnReminderChip {
         }
         root.addView(button(R.drawable.ic_muninn_check, R.string.muninn_reminder_done, !askToLetGo) { actions.onDone(clip) })
         root.addView(button(R.drawable.ic_muninn_clock, R.string.muninn_reminder_later, false) { actions.onLater(clip) })
-        root.addView(button(R.drawable.ic_muninn_leaf, R.string.muninn_reminder_let_go, askToLetGo) { actions.onLetGo(clip) })
+        root.addView(button(R.drawable.ic_muninn_close, R.string.muninn_reminder_stop, askToLetGo) { actions.onStop(clip) })
 
         if (firstTime && !calm) {
             // two soft taps, like wingbeats

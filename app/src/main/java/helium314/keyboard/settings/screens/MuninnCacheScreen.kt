@@ -4,7 +4,20 @@ package helium314.keyboard.settings.screens
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.widget.Toast
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.material3.Button
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
+import helium314.keyboard.latin.utils.prefs
+import helium314.keyboard.latin.settings.Defaults
+import helium314.keyboard.latin.settings.Settings
 import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -86,10 +99,23 @@ private enum class CacheFilter(@StringRes val label: Int) {
 @Composable
 fun MuninnCacheScreen(onClickBack: () -> Unit) {
     val ctx = LocalContext.current
+    val lockOn = remember { ctx.prefs().getBoolean(Settings.PREF_MUNINN_LOCK_CACHE, Defaults.PREF_MUNINN_LOCK_CACHE) }
+    var unlocked by remember { mutableStateOf(!lockOn || MuninnCacheLock.isUnlocked()) }
+    if (unlocked) CacheContent(onClickBack)
+    else LockedScreen(onClickBack, onUnlocked = { unlocked = true })
+}
+
+@OptIn(ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
+@Composable
+private fun CacheContent(onClickBack: () -> Unit) {
+    val ctx = LocalContext.current
     val haptic = LocalHapticFeedback.current
     val dao = remember { ClipboardDao.getInstance(ctx) }
     var query by rememberSaveable { mutableStateOf("") }
     var filter by rememberSaveable { mutableStateOf(CacheFilter.ALL) }
+    var tagFilter by rememberSaveable { mutableStateOf<String?>(null) }
+    val selected = remember { mutableStateListOf<Long>() } // not empty = choosing clips to merge or delete
+    val selecting = selected.isNotEmpty()
     var version by remember { mutableIntStateOf(0) } // bumped after every change, so the list is read again
     /** every action is felt (vibration), seen (message) and shown (the list redraws) */
     fun changed(@StringRes message: Int? = null) {
@@ -97,9 +123,14 @@ fun MuninnCacheScreen(onClickBack: () -> Unit) {
         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
         if (message != null) Toast.makeText(ctx, message, Toast.LENGTH_SHORT).show()
     }
+    fun changed(message: String) {
+        version++
+        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        Toast.makeText(ctx, message, Toast.LENGTH_SHORT).show()
+    }
 
     // a snapshot of each clip, so the screen redraws when a clip changes (the database changes clips in place)
-    val clips: List<ClipView> = remember(version, query, filter) {
+    val clips: List<ClipView> = remember(version, query, filter, tagFilter) {
         if (dao == null) return@remember emptyList()
         val base = when (filter) {
             CacheFilter.ALL -> dao.getAll()
@@ -108,14 +139,30 @@ fun MuninnCacheScreen(onClickBack: () -> Unit) {
             CacheFilter.LINKS -> dao.getAll().filter { MuninnClips.isLink(it.text) }
             CacheFilter.CODES -> dao.getAll().filter { it.isCode }
             CacheFilter.TRASH -> dao.getTrash()
-        }.toList()
+        }.toList().let { list -> tagFilter?.let { t -> list.filter { t in it.tags } } ?: list }
         val q = query.trim()
         val matching = if (q.isEmpty()) base
             else base.filter { clip ->
                 !clip.isCode && (clip.text?.contains(q, ignoreCase = true) == true
-                        || MuninnClips.appLabel(ctx, clip.source)?.contains(q, ignoreCase = true) == true)
+                        || MuninnClips.appLabel(ctx, clip.source)?.contains(q, ignoreCase = true) == true
+                        || clip.tags.any { MuninnClips.tagLabel(ctx, it).contains(q, ignoreCase = true) })
             }
-        matching.map { ClipView(it, it.isPinned, MuninnClips.metaLine(ctx, it), it.remindAt) }
+        matching.map { ClipView(it, it.isPinned, MuninnClips.metaLine(ctx, it, tags = false), it.remindAt, it.tags.toList()) }
+    }
+    val tagsInUse = remember(version) { dao?.allTags() ?: emptyList() }
+    var actionsFor by remember { mutableStateOf<ClipView?>(null) }
+    var editFor by remember { mutableStateOf<ClipView?>(null) }
+    var tagsFor by remember { mutableStateOf<ClipView?>(null) }
+    // a hint that disappears once the person has held a clip
+    var hintSeen by remember { mutableStateOf(ctx.prefs().getBoolean(PREF_HINT_SEEN, false)) }
+    fun openActions(cv: ClipView) {
+        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        actionsFor = cv
+        if (!hintSeen) { hintSeen = true; ctx.prefs().edit().putBoolean(PREF_HINT_SEEN, true).apply() }
+    }
+    fun toggleSelected(cv: ClipView) {
+        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+        if (cv.clip.id in selected) selected.remove(cv.clip.id) else selected.add(cv.clip.id)
     }
     val total = remember(version) { dao?.count() ?: 0 }
     val trashCount = remember(version) { dao?.trashCount() ?: 0 }
@@ -141,6 +188,27 @@ fun MuninnCacheScreen(onClickBack: () -> Unit) {
                 Box(Modifier.weight(1f).height(1.dp).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)))
             }
 
+            val row: @Composable (ClipView) -> Unit = { cv ->
+                ClipRow(
+                    cv, inTrash,
+                    selecting = selecting,
+                    isSelected = cv.clip.id in selected,
+                    onCopy = { if (selecting) toggleSelected(cv) else { copyClip(ctx, cv.clip); changed() } },
+                    onHold = { if (selecting) toggleSelected(cv) else if (!inTrash) openActions(cv) },
+                    onRemind = { remindFor = cv },
+                    onPin = {
+                        val wasPinned = cv.pinned
+                        dao?.togglePinned(cv.clip.id)
+                        changed(if (wasPinned) R.string.muninn_unpinned else R.string.muninn_pinned)
+                    },
+                    onDelete = {
+                        dao?.deleteById(cv.clip.id)
+                        changed(if (inTrash) R.string.muninn_deleted_forever else R.string.muninn_moved_to_deleted)
+                    },
+                    onRestore = { dao?.restore(cv.clip.id); changed(R.string.muninn_restored) },
+                    onTagClick = { tag -> tagFilter = if (tagFilter == tag) null else tag; haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove) },
+                )
+            }
             // the list takes the middle; search and filters sit at the bottom, where the thumb is
             LazyColumn(
                 modifier = Modifier.weight(1f),
@@ -161,6 +229,14 @@ fun MuninnCacheScreen(onClickBack: () -> Unit) {
                             }
                     }
                 }
+                if (!inTrash && !hintSeen && clips.isNotEmpty() && !selecting) item(key = "hint") {
+                    Text(
+                        stringResource(R.string.muninn_clip_actions_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(start = 6.dp, bottom = 2.dp)
+                    )
+                }
                 if (clips.isEmpty()) item(key = "empty") {
                     Text(
                         stringResource(if (query.isBlank()) R.string.muninn_cache_empty else R.string.muninn_cache_no_match),
@@ -173,35 +249,27 @@ fun MuninnCacheScreen(onClickBack: () -> Unit) {
                 val rest = if (filter == CacheFilter.ALL) clips.filter { !it.pinned } else clips
                 if (pinned.isNotEmpty()) {
                     item(key = "h_pinned") { SectionHeader(R.string.muninn_section_pinned, gold = true) }
-                    items(pinned, key = { it.clip.id }) { cv ->
-                        ClipRow(cv, inTrash, onCopy = { copyClip(ctx, cv.clip); changed() },
-                            onRemind = { remindFor = cv },
-                            onPin = { dao?.togglePinned(cv.clip.id); changed(R.string.muninn_unpinned) },
-                            onDelete = { dao?.deleteById(cv.clip.id); changed(R.string.muninn_moved_to_deleted) },
-                            onRestore = { })
-                    }
+                    items(pinned, key = { it.clip.id }) { cv -> row(cv) }
                     if (rest.isNotEmpty()) item(key = "h_kept") { SectionHeader(R.string.muninn_section_kept, gold = false) }
                 }
-                items(rest, key = { it.clip.id }) { cv ->
-                    ClipRow(
-                        cv, inTrash,
-                        onCopy = { copyClip(ctx, cv.clip); changed() },
-                        onRemind = { remindFor = cv },
-                        onPin = {
-                            val wasPinned = cv.pinned
-                            dao?.togglePinned(cv.clip.id)
-                            changed(if (wasPinned) R.string.muninn_unpinned else R.string.muninn_pinned)
-                        },
-                        onDelete = {
-                            dao?.deleteById(cv.clip.id)
-                            changed(if (inTrash) R.string.muninn_deleted_forever else R.string.muninn_moved_to_deleted)
-                        },
-                        onRestore = { dao?.restore(cv.clip.id); changed(R.string.muninn_restored) },
-                    )
-                }
+                items(rest, key = { it.clip.id }) { cv -> row(cv) }
             }
 
-            Column(
+            if (selecting) SelectionBar(
+                count = selected.size,
+                onCancel = { selected.clear() },
+                onDelete = {
+                    selected.toList().forEach { dao?.deleteById(it) }
+                    selected.clear()
+                    changed(R.string.muninn_moved_to_deleted)
+                },
+                onMerge = {
+                    if (dao?.merge(selected.toList()) == true) {
+                        selected.clear()
+                        changed(R.string.muninn_merged)
+                    } else Toast.makeText(ctx, R.string.muninn_merge_need_two, Toast.LENGTH_SHORT).show()
+                },
+            ) else Column(
                 Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).imePadding()
                     .padding(top = 8.dp, bottom = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -211,21 +279,27 @@ fun MuninnCacheScreen(onClickBack: () -> Unit) {
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     CacheFilter.entries.forEach { f ->
-                        val selected = f == filter
                         val label = stringResource(f.label) + if (f == CacheFilter.TRASH && trashCount > 0) " $trashCount" else ""
-                        Text(
-                            label,
-                            style = MaterialTheme.typography.labelLarge,
-                            color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(50))
-                                .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHigh)
-                                .clickable {
-                                    filter = f
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                }
-                                .padding(horizontal = 16.dp, vertical = 12.dp)
-                        )
+                        FilterChip(label, f == filter) {
+                            filter = f
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        }
+                    }
+                }
+                // tags in use, as a second row: tap one to see only those clips
+                val tagRow = (tagsInUse + listOfNotNull(tagFilter)).distinct()
+                if (tagRow.isNotEmpty() && !inTrash) Row(
+                    Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 14.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(painterResource(R.drawable.ic_muninn_tag), stringResource(R.string.muninn_tags),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+                    tagRow.forEach { tag ->
+                        TagChip(MuninnClips.tagLabel(ctx, tag), selected = tag == tagFilter, large = true) {
+                            tagFilter = if (tagFilter == tag) null else tag
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        }
                     }
                 }
                 OutlinedTextField(
@@ -245,12 +319,48 @@ fun MuninnCacheScreen(onClickBack: () -> Unit) {
                 )
             }
         }
+        actionsFor?.let { cv ->
+            ClipActionsDialog(
+                cv = cv,
+                onDismiss = { actionsFor = null },
+                onCopy = { actionsFor = null; copyClip(ctx, cv.clip); changed() },
+                onEdit = { actionsFor = null; editFor = cv },
+                onTags = { actionsFor = null; tagsFor = cv },
+                onSelect = { actionsFor = null; selected.clear(); selected.add(cv.clip.id); changed() },
+                onShare = { actionsFor = null; shareClip(ctx, cv.clip) },
+            )
+        }
+        editFor?.let { cv ->
+            EditDialog(
+                initial = cv.clip.text.orEmpty(),
+                onDismiss = { editFor = null },
+                onSave = { newText ->
+                    if (newText == cv.clip.text) { editFor = null; return@EditDialog }
+                    if (dao?.editText(cv.clip.id, newText) == true) {
+                        editFor = null
+                        changed(R.string.muninn_edit_saved)
+                    } else Toast.makeText(ctx, R.string.muninn_edit_duplicate, Toast.LENGTH_SHORT).show()
+                },
+            )
+        }
+        tagsFor?.let { cv ->
+            TagsDialog(
+                initial = cv.tags,
+                known = (MuninnClips.BUILT_IN_TAGS + tagsInUse).distinct(),
+                onDismiss = { tagsFor = null },
+                onToggle = { tag, nowOn ->
+                    dao?.toggleTag(cv.clip.id, tag)
+                    val label = MuninnClips.tagLabel(ctx, tag)
+                    changed(ctx.getString(if (nowOn) R.string.muninn_tag_added else R.string.muninn_tag_removed, label))
+                },
+            )
+        }
         remindFor?.let { cv ->
             ReminderSheet(
                 cv = cv,
                 onDismiss = { remindFor = null },
-                onSet = { preset, strength ->
-                    MuninnReminders.set(ctx, cv.clip.id, preset, strength)
+                onSet = { preset ->
+                    MuninnReminders.set(ctx, cv.clip.id, preset)
                     remindFor = null
                     version++
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -268,35 +378,224 @@ fun MuninnCacheScreen(onClickBack: () -> Unit) {
     }
 }
 
-/** Muninn: choose when and how strongly a clip comes back */
+private const val PREF_HINT_SEEN = "muninn_hint_clip_actions_seen"
+
+/** Muninn: the round filter buttons at the bottom of the cache */
+@Composable
+private fun FilterChip(label: String, selected: Boolean, onClick: () -> Unit) {
+    Text(
+        label,
+        style = MaterialTheme.typography.labelLarge,
+        color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHigh)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+    )
+}
+
+/** Muninn: a small gold-outlined label, under a clip or in the tag row */
+@Composable
+private fun TagChip(label: String, selected: Boolean = false, large: Boolean = false, onClick: (() -> Unit)? = null) {
+    val gold = MaterialTheme.colorScheme.primary
+    Text(
+        label,
+        style = if (large) MaterialTheme.typography.labelLarge else MaterialTheme.typography.labelSmall,
+        color = if (selected) MaterialTheme.colorScheme.onPrimary else gold,
+        maxLines = 1,
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(if (selected) gold else gold.copy(alpha = 0.10f))
+            .border(BorderStroke(1.dp, gold.copy(alpha = if (selected) 1f else 0.45f)), RoundedCornerShape(50))
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(horizontal = if (large) 14.dp else 8.dp, vertical = if (large) 9.dp else 2.dp)
+    )
+}
+
+/** Muninn: shown instead of the filters while clips are being chosen */
+@Composable
+private fun SelectionBar(count: Int, onCancel: () -> Unit, onDelete: () -> Unit, onMerge: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .padding(start = 8.dp, end = 86.dp, top = 10.dp, bottom = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        IconButton(onClick = onCancel) {
+            Icon(painterResource(R.drawable.ic_muninn_close), stringResource(android.R.string.cancel))
+        }
+        Text(stringResource(R.string.muninn_selected, count), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+        IconButton(onClick = onDelete) {
+            Icon(painterResource(R.drawable.ic_muninn_delete), stringResource(R.string.muninn_cache_delete))
+        }
+        Button(onClick = onMerge, enabled = count >= 2) {
+            Icon(painterResource(R.drawable.ic_muninn_merge), null, Modifier.size(18.dp))
+            Spacer(Modifier.size(6.dp))
+            Text(stringResource(R.string.muninn_merge))
+        }
+    }
+}
+
+/** Muninn: what holding a clip offers. Big rows, one line each, so it reads at a glance. */
+@Composable
+private fun ClipActionsDialog(
+    cv: ClipView,
+    onDismiss: () -> Unit,
+    onCopy: () -> Unit,
+    onEdit: () -> Unit,
+    onTags: () -> Unit,
+    onSelect: () -> Unit,
+    onShare: () -> Unit,
+) {
+    val isText = cv.clip.filename == null
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(android.R.string.cancel)) } },
+        title = {
+            Text(
+                if (cv.clip.isCode) MuninnClips.MASKED_CODE else if (!isText) stringResource(R.string.muninn_cache_file) else cv.clip.text.orEmpty(),
+                maxLines = 3, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyLarge
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                ActionRow(R.drawable.sym_keyboard_copy_rounded, R.string.muninn_copy, onCopy)
+                if (isText) ActionRow(R.drawable.ic_muninn_edit, R.string.muninn_edit, onEdit)
+                ActionRow(R.drawable.ic_muninn_tag, R.string.muninn_tags, onTags)
+                ActionRow(R.drawable.ic_muninn_select, R.string.muninn_select_to_merge, onSelect)
+                if (isText) ActionRow(R.drawable.ic_muninn_share, R.string.muninn_share, onShare)
+            }
+        },
+    )
+}
+
+@Composable
+private fun ActionRow(icon: Int, @StringRes label: Int, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .clickable(onClick = onClick).padding(horizontal = 14.dp, vertical = 13.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        Icon(painterResource(icon), null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+        Text(stringResource(label), style = MaterialTheme.typography.bodyLarge)
+    }
+}
+
+@Composable
+private fun EditDialog(initial: String, onDismiss: () -> Unit, onSave: (String) -> Unit) {
+    var text by remember { mutableStateOf(initial) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.muninn_edit), fontFamily = MuninnSerif, fontSize = 30.sp) },
+        text = {
+            OutlinedTextField(value = text, onValueChange = { text = it }, minLines = 3, maxLines = 10,
+                shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth())
+        },
+        confirmButton = { TextButton(onClick = { onSave(text) }, enabled = text.isNotBlank()) { Text(stringResource(R.string.muninn_save)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(android.R.string.cancel)) } },
+    )
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun TagsDialog(initial: List<String>, known: List<String>, onDismiss: () -> Unit, onToggle: (String, Boolean) -> Unit) {
+    val ctx = LocalContext.current
+    val on = remember { mutableStateListOf<String>().apply { addAll(initial) } }
+    val all = remember { mutableStateListOf<String>().apply { addAll((known + initial).distinct()) } }
+    var newTag by remember { mutableStateOf("") }
+    fun toggle(tag: String) {
+        val nowOn = tag !in on
+        if (nowOn) on.add(tag) else on.remove(tag)
+        onToggle(tag, nowOn)
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.muninn_tags), fontFamily = MuninnSerif, fontSize = 30.sp) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    all.forEach { tag -> TagChip(MuninnClips.tagLabel(ctx, tag), selected = tag in on, large = true) { toggle(tag) } }
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedTextField(
+                        value = newTag, onValueChange = { newTag = it.replace(ClipboardDao.TAG_SEPARATOR, "").take(24) },
+                        placeholder = { Text(stringResource(R.string.muninn_tag_new)) }, singleLine = true,
+                        shape = RoundedCornerShape(14.dp), modifier = Modifier.weight(1f)
+                    )
+                    TextButton(enabled = newTag.isNotBlank(), onClick = {
+                        val tag = newTag.trim()
+                        newTag = ""
+                        if (tag !in all) all.add(tag)
+                        if (tag !in on) toggle(tag)
+                    }) { Text(stringResource(R.string.muninn_tag_add)) }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(android.R.string.ok)) } },
+    )
+}
+
+/** Muninn: the cache behind a fingerprint or the screen lock */
+@Composable
+private fun LockedScreen(onClickBack: () -> Unit, onUnlocked: () -> Unit) {
+    val ctx = LocalContext.current
+    fun ask() = MuninnCacheLock.ask(ctx, onUnlocked)
+    LaunchedEffect(Unit) { ask() }
+    Surface {
+        Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
+            Row(Modifier.padding(start = 4.dp, top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                BackButton(onClickBack)
+                Text(stringResource(R.string.muninn_cache_title), fontFamily = MuninnSerif, fontSize = 38.sp)
+            }
+            Column(
+                Modifier.fillMaxWidth().weight(1f).padding(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically)
+            ) {
+                Box(Modifier.size(72.dp).clip(RoundedCornerShape(22.dp)).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.13f)),
+                    contentAlignment = Alignment.Center) {
+                    Icon(painterResource(R.drawable.ic_muninn_lock), null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
+                }
+                Text(stringResource(R.string.muninn_locked), fontFamily = MuninnSerif, fontSize = 28.sp, textAlign = TextAlign.Center)
+                if (android.os.Build.VERSION.SDK_INT < 28)
+                    Text(stringResource(R.string.muninn_lock_needs_android9), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                else Button(onClick = { ask() }) { Text(stringResource(R.string.muninn_unlock)) }
+            }
+        }
+    }
+}
+
+/** Muninn: choose when a clip first comes back. After that it keeps coming back until Done or stopped. */
 @Composable
 private fun ReminderSheet(
     cv: ClipView,
     onDismiss: () -> Unit,
-    onSet: (MuninnReminderTimes.Preset, Int) -> Unit,
+    onSet: (MuninnReminderTimes.Preset) -> Unit,
     onRemove: () -> Unit,
 ) {
     val ctx = LocalContext.current
-    var strength by remember { mutableIntStateOf(if (cv.remindAt != null) cv.clip.remindStrength else MuninnReminders.defaultStrength(ctx)) }
     var pendingPreset by remember { mutableStateOf<MuninnReminderTimes.Preset?>(null) }
-    // Loud reminders need permission to send notifications (Android 13+)
+    // notifications need permission on Android 13+; without it reminders still show in the keyboard
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         val preset = pendingPreset ?: return@rememberLauncherForActivityResult
-        onSet(preset, if (granted) strength else MuninnReminders.NOTICEABLE)
+        onSet(preset)
         if (!granted) Toast.makeText(ctx, R.string.muninn_notifications_denied, Toast.LENGTH_LONG).show()
     }
     fun choose(preset: MuninnReminderTimes.Preset) {
-        if (strength == MuninnReminders.LOUD && android.os.Build.VERSION.SDK_INT >= 33 && !MuninnReminders.canNotify(ctx)) {
+        if (android.os.Build.VERSION.SDK_INT >= 33 && !MuninnReminders.canNotify(ctx)) {
             pendingPreset = preset
             permission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-        } else onSet(preset, strength)
+        } else onSet(preset)
     }
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {},
         dismissButton = {
             Row {
-                if (cv.remindAt != null) TextButton(onClick = onRemove) { Text(stringResource(R.string.muninn_remind_remove)) }
+                if (cv.remindAt != null) TextButton(onClick = onRemove) { Text(stringResource(R.string.muninn_reminder_stop)) }
                 TextButton(onClick = onDismiss) { Text(stringResource(android.R.string.cancel)) }
             }
         },
@@ -308,28 +607,8 @@ private fun ReminderSheet(
                     maxLines = 2, overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Text(stringResource(R.string.muninn_remind_how).uppercase(), style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 1.sp),
+                Text(stringResource(R.string.muninn_remind_first_time).uppercase(), style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 1.sp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
-                listOf(
-                    Triple(MuninnReminders.CALM, R.string.muninn_strength_calm, R.string.muninn_strength_calm_description),
-                    Triple(MuninnReminders.NOTICEABLE, R.string.muninn_strength_noticeable, R.string.muninn_strength_noticeable_description),
-                    Triple(MuninnReminders.LOUD, R.string.muninn_strength_loud, R.string.muninn_strength_loud_description),
-                ).forEach { (value, name, description) ->
-                    val selected = strength == value
-                    Column(
-                        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
-                            .background(if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.14f) else MaterialTheme.colorScheme.surfaceContainerHigh)
-                            .border(BorderStroke(1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant), RoundedCornerShape(12.dp))
-                            .clickable { strength = value }
-                            .padding(horizontal = 12.dp, vertical = 8.dp)
-                    ) {
-                        Text(stringResource(name), style = MaterialTheme.typography.bodyLarge,
-                            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
-                        Text(stringResource(description), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-                Text(stringResource(R.string.muninn_remind_when).uppercase(), style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 1.sp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
                 listOf(
                     R.string.muninn_remind_in_hour to MuninnReminderTimes.Preset.IN_ONE_HOUR,
                     R.string.muninn_remind_tonight to MuninnReminderTimes.Preset.TONIGHT,
@@ -346,13 +625,15 @@ private fun ReminderSheet(
                         Text(time, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
+                Text(stringResource(R.string.muninn_remind_explained), style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
             }
         },
     )
 }
 
 /** what one row shows, taken at the moment the list was read */
-private class ClipView(val clip: ClipboardHistoryEntry, val pinned: Boolean, val meta: String, val remindAt: Long?)
+private class ClipView(val clip: ClipboardHistoryEntry, val pinned: Boolean, val meta: String, val remindAt: Long?, val tags: List<String>)
 
 @Composable
 private fun SectionHeader(@StringRes title: Int, gold: Boolean) {
@@ -364,30 +645,46 @@ private fun SectionHeader(@StringRes title: Int, gold: Boolean) {
     )
 }
 
+@OptIn(ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 @Composable
 private fun ClipRow(
     cv: ClipView,
     inTrash: Boolean,
+    selecting: Boolean,
+    isSelected: Boolean,
     onCopy: () -> Unit,
+    onHold: () -> Unit,
     onPin: () -> Unit,
     onDelete: () -> Unit,
     onRestore: () -> Unit,
-    onRemind: () -> Unit = {},
+    onRemind: () -> Unit,
+    onTagClick: (String) -> Unit,
 ) {
+    val ctx = LocalContext.current
     val clip = cv.clip
     val gold = MaterialTheme.colorScheme.primary
-    val highlighted = cv.pinned || clip.isCode
+    val highlighted = cv.pinned || clip.isCode || isSelected
     Row(
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(if (cv.pinned) gold.copy(alpha = 0.08f) else MaterialTheme.colorScheme.surfaceContainer)
-            .then(if (highlighted) Modifier.border(BorderStroke(1.5.dp, gold.copy(alpha = 0.7f)), RoundedCornerShape(16.dp)) else Modifier)
-            .clickable(enabled = !inTrash) { onCopy() }
+            .background(if (cv.pinned || isSelected) gold.copy(alpha = if (isSelected) 0.16f else 0.08f) else MaterialTheme.colorScheme.surfaceContainer)
+            .then(if (highlighted) Modifier.border(BorderStroke(if (isSelected) 2.dp else 1.5.dp, gold.copy(alpha = if (isSelected) 1f else 0.7f)), RoundedCornerShape(16.dp)) else Modifier)
+            .combinedClickable(enabled = !inTrash, onClick = onCopy, onLongClick = onHold)
             .padding(start = 14.dp, top = 10.dp, bottom = 10.dp, end = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        if (selecting) {
+            Box(
+                Modifier.padding(end = 12.dp).size(22.dp).clip(RoundedCornerShape(50))
+                    .background(if (isSelected) gold else Color.Transparent)
+                    .border(BorderStroke(2.dp, if (isSelected) gold else MaterialTheme.colorScheme.outline), RoundedCornerShape(50)),
+                contentAlignment = Alignment.Center
+            ) {
+                if (isSelected) Icon(painterResource(R.drawable.ic_muninn_check), null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(16.dp))
+            }
+        }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             val text = when {
                 clip.isCode -> MuninnClips.MASKED_CODE
                 clip.filename != null -> stringResource(R.string.muninn_cache_file) + (clip.text?.let { " · $it" } ?: "")
@@ -400,13 +697,17 @@ private fun ClipRow(
                 overflow = TextOverflow.Ellipsis,
                 color = if (MuninnClips.isLink(clip.text)) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurface
             )
+            if (cv.tags.isNotEmpty()) FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                cv.tags.forEach { tag -> TagChip(MuninnClips.tagLabel(ctx, tag), onClick = if (selecting) null else ({ onTagClick(tag) })) }
+            }
             Text(
                 cv.meta,
                 style = MaterialTheme.typography.bodySmall,
                 color = if (highlighted) gold else MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        if (inTrash) {
+        if (selecting) Unit
+        else if (inTrash) {
             IconButton(onClick = onRestore) {
                 Icon(painterResource(R.drawable.ic_muninn_restore), stringResource(R.string.muninn_cache_restore), tint = gold)
             }
@@ -428,7 +729,7 @@ private fun ClipRow(
                 )
             }
         }
-        IconButton(onClick = onDelete) {
+        if (!selecting) IconButton(onClick = onDelete) {
             Icon(
                 painterResource(R.drawable.ic_muninn_delete),
                 stringResource(if (inTrash) R.string.muninn_cache_delete_forever else R.string.muninn_cache_delete),
@@ -437,6 +738,11 @@ private fun ClipRow(
             )
         }
     }
+}
+
+private fun shareClip(context: Context, clip: ClipboardHistoryEntry) {
+    val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, clip.text.orEmpty())
+    context.startActivity(Intent.createChooser(send, context.getString(R.string.muninn_share)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
 }
 
 private fun copyClip(context: Context, clip: ClipboardHistoryEntry) {

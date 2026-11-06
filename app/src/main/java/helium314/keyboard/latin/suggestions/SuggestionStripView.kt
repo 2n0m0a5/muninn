@@ -227,6 +227,15 @@ class SuggestionStripView(context: Context, attrs: AttributeSet?, defStyle: Int)
         suggestionsStrip.layoutDirection = newLayoutDirection
     }
 
+    /** Muninn, calm reminders: tint the clipboard buttons gold while any reminder is open */
+    fun setMuninnReminderSignal(active: Boolean) {
+        val colors = Settings.getValues().mColors
+        val color = if (active) colors.get(ColorType.CLIPBOARD_PIN) else colors.get(ColorType.TOOL_BAR_KEY)
+        listOf(toolbar, pinnedKeys).forEach { group ->
+            (group.findViewWithTag<View>(ToolbarKey.CLIPBOARD) as? android.widget.ImageView)?.setColorFilter(color)
+        }
+    }
+
     fun setToolbarVisibility(toolbarVisible: Boolean) {
         pinnedKeys.isVisible = !toolbarVisible
         suggestionsStrip.isVisible = !toolbarVisible

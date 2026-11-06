@@ -44,7 +44,8 @@ class ClipboardDao private constructor(private val db: Database) {
         db.readableDatabase.query(
             TABLE,
             arrayOf(COLUMN_ID, COLUMN_TIMESTAMP, COLUMN_PINNED, COLUMN_TEXT, COLUMN_FILE, COLUMN_MIME_TYPE,
-                COLUMN_SOURCE, COLUMN_DELETED, COLUMN_EXPIRES, COLUMN_REMIND_AT, COLUMN_REMIND_STRENGTH, COLUMN_REMIND_SKIPS),
+                COLUMN_SOURCE, COLUMN_DELETED, COLUMN_EXPIRES, COLUMN_REMIND_AT, COLUMN_REMIND_STRENGTH, COLUMN_REMIND_SKIPS,
+                COLUMN_REMIND_SHOWN, COLUMN_TAGS),
             null,
             null,
             null,
@@ -65,6 +66,8 @@ class ClipboardDao private constructor(private val db: Database) {
                     it.getLongOrNull(9),
                     it.getIntOrNull(10) ?: 1,
                     it.getIntOrNull(11) ?: 0,
+                    it.getIntOrNull(12) ?: 0,
+                    it.getStringOrNull(13)?.split(TAG_SEPARATOR)?.filter { t -> t.isNotBlank() } ?: emptyList(),
                 )
                 if (entry.deletedAt != null) trash.add(entry) else add(entry)
             }
@@ -261,16 +264,65 @@ class ClipboardDao private constructor(private val db: Database) {
 
     // ---- Muninn: reminders ----
 
-    fun setReminder(id: Long, at: Long?, strength: Int = 1, skips: Int = 0) = synchronized(this) {
+    /** set or clear (at = null) a reminder; [shown] and [skips] count how often it came back and how often Later was chosen */
+    fun setReminder(id: Long, at: Long?, shown: Int = 0, skips: Int = 0) = synchronized(this) {
         val entry = (cache + trash).firstOrNull { it.id == id } ?: return@synchronized
         entry.remindAt = at
-        entry.remindStrength = strength
+        entry.remindShown = if (at == null) 0 else shown
         entry.remindSkips = if (at == null) 0 else skips
         val cv = ContentValues(3)
         if (at == null) cv.putNull(COLUMN_REMIND_AT) else cv.put(COLUMN_REMIND_AT, at)
-        cv.put(COLUMN_REMIND_STRENGTH, strength)
+        cv.put(COLUMN_REMIND_SHOWN, entry.remindShown)
         cv.put(COLUMN_REMIND_SKIPS, entry.remindSkips)
         db.writableDatabase.update(TABLE, cv, "$COLUMN_ID = ${entry.id}", null)
+    }
+
+    // ---- Muninn: tags and editing ----
+
+    fun setTags(id: Long, tags: List<String>) = synchronized(this) {
+        val entry = (cache + trash).firstOrNull { it.id == id } ?: return@synchronized
+        entry.tags = tags.distinct()
+        val cv = ContentValues(1)
+        cv.put(COLUMN_TAGS, entry.tags.joinToString(TAG_SEPARATOR))
+        db.writableDatabase.update(TABLE, cv, "$COLUMN_ID = ${entry.id}", null)
+    }
+
+    fun toggleTag(id: Long, tag: String) {
+        val entry = (cache + trash).firstOrNull { it.id == id } ?: return
+        setTags(id, if (tag in entry.tags) entry.tags - tag else entry.tags + tag)
+    }
+
+    /** every tag in use, most used first */
+    fun allTags(): List<String> = cache.flatMap { it.tags }.groupingBy { it }.eachCount().entries.sortedByDescending { it.value }.map { it.key }
+
+    /** Replace a clip's text. The edited clip keeps its place, pin, tags and reminder. Returns false if the text is now a duplicate. */
+    fun editText(id: Long, newText: String): Boolean = synchronized(this) {
+        val index = cache.indexOfFirst { it.id == id }
+        if (index < 0 || newText.isBlank()) return@synchronized false
+        if (cache.any { it.id != id && it.text == newText }) return@synchronized false
+        val old = cache[index]
+        val edited = ClipboardHistoryEntry(old.id, old.timeStamp, old.isPinned, newText, old.filename, old.mimeTypes,
+            old.source, old.deletedAt, null, old.remindAt, old.remindStrength, old.remindSkips, old.remindShown, old.tags)
+        cache[index] = edited
+        val cv = ContentValues(2)
+        cv.put(COLUMN_TEXT, newText)
+        cv.putNull(COLUMN_EXPIRES) // an edited code is no longer a one-time code
+        db.writableDatabase.update(TABLE, cv, "$COLUMN_ID = ${old.id}", null)
+        listener?.onClipMoved(index, index)
+        true
+    }
+
+    /** Join several text clips into one new clip (newest time, tags combined); the originals go to Deleted. */
+    fun merge(ids: List<Long>, separator: String = "\n"): Boolean = synchronized(this) {
+        val parts = ids.mapNotNull { id -> cache.firstOrNull { it.id == id } }.filter { it.filename == null && it.text != null }
+        if (parts.size < 2) return@synchronized false
+        val ordered = parts.sortedBy { it.timeStamp }
+        val text = ordered.joinToString(separator) { it.text!! }
+        val tags = ordered.flatMap { it.tags }.distinct()
+        moveToTrash(ordered)
+        insertNewEntry(System.currentTimeMillis(), ordered.any { it.isPinned }, text, null, null, null, ordered.last().source)
+        cache.firstOrNull { it.text == text }?.let { if (tags.isNotEmpty()) setTags(it.id, tags) }
+        true
     }
 
     /** live clips with a reminder, soonest first */
@@ -394,6 +446,11 @@ class ClipboardDao private constructor(private val db: Database) {
         const val ADD_REMIND_AT_COLUMN = "ALTER TABLE $TABLE ADD COLUMN $COLUMN_REMIND_AT INTEGER"
         const val ADD_REMIND_STRENGTH_COLUMN = "ALTER TABLE $TABLE ADD COLUMN $COLUMN_REMIND_STRENGTH INTEGER"
         const val ADD_REMIND_SKIPS_COLUMN = "ALTER TABLE $TABLE ADD COLUMN $COLUMN_REMIND_SKIPS INTEGER"
+        private const val COLUMN_REMIND_SHOWN = "REMIND_SHOWN" // how often the current reminder came back
+        private const val COLUMN_TAGS = "TAGS" // tags joined by TAG_SEPARATOR
+        const val TAG_SEPARATOR = "§"
+        const val ADD_REMIND_SHOWN_COLUMN = "ALTER TABLE $TABLE ADD COLUMN $COLUMN_REMIND_SHOWN INTEGER"
+        const val ADD_TAGS_COLUMN = "ALTER TABLE $TABLE ADD COLUMN $COLUMN_TAGS TEXT"
 
         private var instance: ClipboardDao? = null
         lateinit var clipFilesDir: File

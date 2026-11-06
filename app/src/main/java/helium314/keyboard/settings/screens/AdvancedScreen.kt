@@ -98,7 +98,9 @@ fun AdvancedSettingsScreen(
     SearchSettingsScreen(
         onClickBack = onClickBack,
         title = stringResource(R.string.settings_screen_advanced),
-        settings = items
+        settings = items,
+        intro = stringResource(R.string.muninn_intro_advanced),
+        essentials = setOf(Settings.PREF_SPACE_LONG_PRESS_CURSOR, Settings.PREF_SPACE_HORIZONTAL_SWIPE, Settings.PREF_DELETE_SWIPE, Settings.PREF_KEY_LONGPRESS_TIMEOUT, Settings.PREF_ALWAYS_INCOGNITO_MODE, SettingsWithoutKey.BACKUP_RESTORE),
     )
 }
 

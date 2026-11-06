@@ -34,11 +34,15 @@ class Database private constructor(context: Context, name: String = NAME) : SQLi
             db.execSQL(ClipboardDao.ADD_REMIND_STRENGTH_COLUMN)
             db.execSQL(ClipboardDao.ADD_REMIND_SKIPS_COLUMN)
         }
+        if (oldVersion <= 5) { // Muninn: recurring reminders and tags
+            db.execSQL(ClipboardDao.ADD_REMIND_SHOWN_COLUMN)
+            db.execSQL(ClipboardDao.ADD_TAGS_COLUMN)
+        }
     }
 
     companion object {
         private val TAG = Database::class.java.simpleName
-        private const val VERSION = 5
+        private const val VERSION = 6
         const val NAME = "heliboard.db"
         private var instance: Database? = null
         fun getInstance(context: Context): Database {

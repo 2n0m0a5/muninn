@@ -32,10 +32,14 @@ class ClipboardHistoryEntry(
     val expiresAt: Long? = null,
     /** Muninn: when Muninn should bring this clip back (ms); null = no reminder */
     var remindAt: Long? = null,
-    /** Muninn: how strongly: [MuninnReminders.CALM], [MuninnReminders.NOTICEABLE] or [MuninnReminders.LOUD] */
+    /** Muninn: no longer used (every reminder now uses all three ways); kept so old data still loads */
     var remindStrength: Int = 1,
     /** Muninn: how many times "Later" was chosen for the current reminder */
     var remindSkips: Int = 0,
+    /** Muninn: how many times the current reminder came back already; the gaps grow with it */
+    var remindShown: Int = 0,
+    /** Muninn: tags, e.g. "important", "watch", or a name the person made up */
+    var tags: List<String> = emptyList(),
 ) : Comparable<ClipboardHistoryEntry> {
     /** Muninn: has a reminder that is due */
     fun isDue(now: Long) = remindAt.let { it != null && it <= now } && deletedAt == null

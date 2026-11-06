@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-only -->
+<resources>
+    <!-- gold that is readable on a light notification background -->
+    <color name="muninn_notification_gold">#8A5A10</color>
+</resources>

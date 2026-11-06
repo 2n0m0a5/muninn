@@ -877,6 +877,7 @@ public class LatinIME extends InputMethodService implements
                     && helium314.keyboard.latin.utils.InputTypeUtils.isPasswordInputType(editorInfo.inputType);
             mMuninnReminder = password ? null : MuninnReminders.INSTANCE.pickForKeyboard(this, System.currentTimeMillis());
             mMuninnReminderShown = false;
+            updateMuninnCalmSignal();
         }
 
         setGestureDataGatheringMode(editorInfo, restarting);
@@ -1595,18 +1596,26 @@ public class LatinIME extends InputMethodService implements
             if (next != null)
                 android.widget.Toast.makeText(LatinIME.this, getString(R.string.muninn_reminder_later_feedback,
                         MuninnReminders.INSTANCE.describeTime(LatinIME.this, next, System.currentTimeMillis())), android.widget.Toast.LENGTH_SHORT).show();
+            updateMuninnCalmSignal();
             setNeutralSuggestionStrip();
         }
-        @Override public void onLetGo(@NonNull final ClipboardHistoryEntry clip) {
-            MuninnReminders.INSTANCE.letGo(LatinIME.this, clip.getId());
-            closeMuninnReminder(R.string.muninn_reminder_let_go_feedback);
+        @Override public void onStop(@NonNull final ClipboardHistoryEntry clip) {
+            MuninnReminders.INSTANCE.stop(LatinIME.this, clip.getId());
+            closeMuninnReminder(R.string.muninn_reminder_stop_feedback);
         }
     };
 
     private void closeMuninnReminder(final int message) {
         mMuninnReminder = null;
         android.widget.Toast.makeText(this, message, android.widget.Toast.LENGTH_SHORT).show();
+        updateMuninnCalmSignal();
         setNeutralSuggestionStrip();
+    }
+
+    /** Muninn, calm reminders: the clipboard button above the keys is gold while any reminder is open */
+    private void updateMuninnCalmSignal() {
+        if (hasSuggestionStripView())
+            mSuggestionStripView.setMuninnReminderSignal(MuninnReminders.INSTANCE.hasOpenReminders(this));
     }
 
     /** Muninn: shows the reminder picked when the keyboard opened, if there is one. Returns whether it is shown. */

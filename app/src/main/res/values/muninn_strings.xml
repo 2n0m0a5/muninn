@@ -151,4 +151,79 @@
     <string name="muninn_remind_try_description">Makes your latest clip due now. Open the keyboard in any app and it comes back.</string>
     <string name="muninn_remind_try_button">Bring back my latest clip</string>
     <string name="muninn_remind_try_done">Done. Open the keyboard anywhere to see it.</string>
+    <!-- Simpler settings screens -->
+    <string name="muninn_more_options">More options</string>
+    <string name="muninn_fewer_options">Fewer options</string>
+    <string name="muninn_more_options_description">%d more settings, for fine-tuning. You can also search.</string>
+    <string name="muninn_intro_appearance">How the keyboard looks: colours, key shape and size.</string>
+    <string name="muninn_intro_preferences">How the keys behave and feel, and what the clipboard keeps.</string>
+    <string name="muninn_intro_correction">How Muninn helps you spell: corrections, suggestions and capital letters.</string>
+    <string name="muninn_intro_toolbar">The row of buttons above the keys: which ones show, and when.</string>
+    <string name="muninn_intro_advanced">Gestures and a few rarely needed switches.</string>
+    <!-- Reminders, reworked -->
+    <string name="muninn_reminder_stop">Stop reminding</string>
+    <string name="muninn_reminder_stop_feedback">Reminder stopped. The clip stays in the cache.</string>
+    <string name="muninn_reminder_copy">Copy</string>
+    <string name="muninn_saved_ago">Saved %s</string>
+    <plurals name="muninn_times_back">
+        <item quantity="one">first time</item>
+        <item quantity="other">%d times so far</item>
+    </plurals>
+    <string name="muninn_remind_first_time">First time</string>
+    <string name="muninn_remind_explained">After that, Muninn keeps bringing it back at changing times, further apart each time, until you press Done or stop the reminder.</string>
+    <string name="muninn_remind_how_it_works">How a reminder reaches you</string>
+    <string name="muninn_way_calm">The clipboard button above the keys turns gold while a reminder is open</string>
+    <string name="muninn_way_noticeable">A gold chip when you open the keyboard. Never while you type.</string>
+    <string name="muninn_way_loud">A notification, so it reaches you even when the keyboard is closed or busy</string>
+    <string name="muninn_ask_still_wanted">Ask if still needed</string>
+    <string name="muninn_ask_still_wanted_description">After you choose Later 3 times, Muninn asks "Still want this?"</string>
+    <!-- Layer 2: tags, editing, merging, lock -->
+    <string name="muninn_tags">Tags</string>
+    <string name="muninn_tag_important">Important</string>
+    <string name="muninn_tag_watch">Watch &amp; read</string>
+    <string name="muninn_tag_buy">Buy</string>
+    <string name="muninn_tag_idea">Idea</string>
+    <string name="muninn_tag_added">Tagged %s</string>
+    <string name="muninn_tag_removed">Removed tag %s</string>
+    <string name="muninn_tag_new">New tag</string>
+    <string name="muninn_tag_add">Add</string>
+    <string name="muninn_edit">Edit</string>
+    <string name="muninn_edit_saved">Saved</string>
+    <string name="muninn_edit_duplicate">That text is already in the cache</string>
+    <string name="muninn_save">Save</string>
+    <string name="muninn_select">Select</string>
+    <string name="muninn_selected">%d selected</string>
+    <string name="muninn_merge">Merge</string>
+    <string name="muninn_merged">Merged into one clip. The originals are in Deleted.</string>
+    <string name="muninn_merge_need_two">Select at least 2 text clips</string>
+    <string name="muninn_share">Share</string>
+    <string name="muninn_copy">Copy</string>
+    <string name="muninn_select_to_merge">Select several (merge or delete)</string>
+    <string name="muninn_clip_actions_hint">Hold a clip for more: edit, tags, select, share</string>
+    <string name="muninn_lock_cache">Lock the cache</string>
+    <string name="muninn_lock_cache_summary">Ask for your fingerprint or screen lock before showing the cache in this app</string>
+    <string name="muninn_locked">The cache is locked</string>
+    <string name="muninn_unlock">Unlock</string>
+    <string name="muninn_lock_needs_android9">Needs Android 9 or newer</string>
+
+    <!-- Muninn: "How Muninn works", everything at one glance on the settings home -->
+    <string name="muninn_how_title">How Muninn works</string>
+    <string name="muninn_how_subtitle">Everything, in one look</string>
+    <string name="muninn_how_copy">Copy anything</string>
+    <string name="muninn_how_copy_does">Muninn keeps it in the cache. Nothing is lost.</string>
+    <string name="muninn_how_swipe_space">Swipe the space bar</string>
+    <string name="muninn_how_swipe_space_does">changes the language</string>
+    <string name="muninn_how_hold_space">Hold the space bar, then slide</string>
+    <string name="muninn_how_hold_space_does">moves the cursor</string>
+    <string name="muninn_how_hold_clip">Hold a clip</string>
+    <string name="muninn_how_hold_clip_does">pin, remind me, tags, delete</string>
+    <string name="muninn_how_gold">The clipboard button turns gold</string>
+    <string name="muninn_how_gold_does">a reminder is waiting for you</string>
+    <string name="muninn_how_chip">A reminder in the bar</string>
+    <string name="muninn_how_chip_does">tap it to paste · ✓ done · later · ✕ stop</string>
+    <string name="muninn_how_deleted">Deleted something by mistake?</string>
+    <string name="muninn_how_deleted_does">it waits in Deleted for %d days</string>
+    <string name="muninn_how_preview">The round keyboard button</string>
+    <string name="muninn_how_preview_does">try every change right where you are</string>
+    <string name="muninn_how_got_it">Got it</string>
 </resources>

@@ -63,7 +63,6 @@ fun MuninnRemindersScreen(onClickBack: () -> Unit) {
     val prefs = ctx.prefs()
     val haptic = LocalHapticFeedback.current
     var on by remember { mutableStateOf(prefs.getBoolean(Settings.PREF_MUNINN_REMINDERS, Defaults.PREF_MUNINN_REMINDERS)) }
-    var strength by remember { mutableIntStateOf(prefs.getInt(Settings.PREF_MUNINN_REMIND_STRENGTH, Defaults.PREF_MUNINN_REMIND_STRENGTH)) }
     var perDay by remember { mutableIntStateOf(prefs.getInt(Settings.PREF_MUNINN_REMIND_PER_DAY, Defaults.PREF_MUNINN_REMIND_PER_DAY)) }
     var quiet by remember { mutableStateOf(prefs.getBoolean(Settings.PREF_MUNINN_QUIET_HOURS, Defaults.PREF_MUNINN_QUIET_HOURS)) }
     var quietStart by remember { mutableIntStateOf(prefs.getInt(Settings.PREF_MUNINN_QUIET_START, Defaults.PREF_MUNINN_QUIET_START)) }
@@ -71,7 +70,7 @@ fun MuninnRemindersScreen(onClickBack: () -> Unit) {
     var letGo by remember { mutableStateOf(prefs.getBoolean(Settings.PREF_MUNINN_OFFER_LET_GO, Defaults.PREF_MUNINN_OFFER_LET_GO)) }
     fun saved() {
         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-        MuninnReminders.scheduleLoud(ctx)
+        MuninnReminders.scheduleNext(ctx)
     }
 
     Surface {
@@ -87,32 +86,31 @@ fun MuninnRemindersScreen(onClickBack: () -> Unit) {
                     }
                 }
                 Column(Modifier.alpha(if (on) 1f else 0.5f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Heading(R.string.muninn_remind_default_strength)
+                    Heading(R.string.muninn_remind_how_it_works)
                     Card {
                         listOf(
-                            Triple(MuninnReminders.CALM, R.string.muninn_strength_calm, R.string.muninn_strength_calm_description),
-                            Triple(MuninnReminders.NOTICEABLE, R.string.muninn_strength_noticeable, R.string.muninn_strength_noticeable_description),
-                            Triple(MuninnReminders.LOUD, R.string.muninn_strength_loud, R.string.muninn_strength_loud_description),
-                        ).forEach { (value, name, description) ->
-                            val selected = strength == value
-                            Row(
-                                Modifier.fillMaxWidth().clickable(enabled = on) {
-                                    strength = value; prefs.edit { putInt(Settings.PREF_MUNINN_REMIND_STRENGTH, value) }; saved()
-                                }.padding(horizontal = 16.dp, vertical = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
+                            Triple(R.drawable.ic_muninn_clipboard, R.string.muninn_strength_calm, R.string.muninn_way_calm),
+                            Triple(R.drawable.ic_muninn_bell, R.string.muninn_strength_noticeable, R.string.muninn_way_noticeable),
+                            Triple(R.drawable.ic_muninn_feather_small, R.string.muninn_strength_loud, R.string.muninn_way_loud),
+                        ).forEach { (icon, name, description) ->
+                            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                                androidx.compose.foundation.layout.Box(
+                                    Modifier.size(38.dp).clip(RoundedCornerShape(11.dp)).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    androidx.compose.material3.Icon(androidx.compose.ui.res.painterResource(icon), null, Modifier.size(20.dp),
+                                        tint = MaterialTheme.colorScheme.primary)
+                                }
                                 Column(Modifier.weight(1f)) {
-                                    Text(stringResource(name), style = MaterialTheme.typography.bodyLarge,
-                                        color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
+                                    Text(stringResource(name), style = MaterialTheme.typography.bodyLarge)
                                     Text(stringResource(description), style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
-                                Spacer(Modifier.width(12.dp))
-                                Spacer(Modifier.size(20.dp).clip(RoundedCornerShape(50))
-                                    .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface)
-                                    .border(BorderStroke(2.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline), RoundedCornerShape(50)))
                             }
                         }
+                        Text(stringResource(R.string.muninn_remind_explained), style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp))
                     }
 
                     Heading(R.string.muninn_remind_limits)
@@ -132,7 +130,7 @@ fun MuninnRemindersScreen(onClickBack: () -> Unit) {
                                 onMinus = { quietEnd = (quietEnd + 23) % 24; prefs.edit { putInt(Settings.PREF_MUNINN_QUIET_END, quietEnd) }; saved() },
                                 onPlus = { quietEnd = (quietEnd + 1) % 24; prefs.edit { putInt(Settings.PREF_MUNINN_QUIET_END, quietEnd) }; saved() })
                         }
-                        SwitchRow(R.string.muninn_offer_let_go, R.string.muninn_offer_let_go_description, letGo, enabled = on) {
+                        SwitchRow(R.string.muninn_ask_still_wanted, R.string.muninn_ask_still_wanted_description, letGo, enabled = on) {
                             letGo = it; prefs.edit { putBoolean(Settings.PREF_MUNINN_OFFER_LET_GO, it) }; saved()
                         }
                     }
@@ -151,7 +149,8 @@ fun MuninnRemindersScreen(onClickBack: () -> Unit) {
                                     if (latest == null) {
                                         Toast.makeText(ctx, R.string.muninn_cache_empty, Toast.LENGTH_SHORT).show()
                                     } else {
-                                        MuninnReminders.set(ctx, latest.id, System.currentTimeMillis() - 1000, strength)
+                                        MuninnReminders.set(ctx, latest.id, System.currentTimeMillis() - 1000)
+                                        MuninnReminders.onAlarm(ctx) // comes back right away: notification now, chip when the keyboard opens
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                         Toast.makeText(ctx, R.string.muninn_remind_try_done, Toast.LENGTH_LONG).show()
                                     }

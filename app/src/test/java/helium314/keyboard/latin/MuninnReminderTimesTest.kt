@@ -47,6 +47,28 @@ class MuninnReminderTimesTest {
         assertEquals(at(7, 0, 30), MuninnReminderTimes.laterTime(at(6, 21, 30), 23, 8, false, tz))
     }
 
+    @Test fun comesBackAtIrregularGrowingGaps() {
+        val now = at(6, 10)
+        val random = java.util.Random(42)
+        var previousGap = 0L
+        for (shown in 1..6) {
+            val next = MuninnReminderTimes.nextOccurrence(shown, now, random, 23, 8, false, tz)
+            val gap = next - now
+            assertTrue(gap > 0)
+            assertTrue(gap > previousGap * 0.7, "gaps grow (shown=$shown)")
+            previousGap = gap
+        }
+        // the same step gives different times: irregular
+        val a = MuninnReminderTimes.nextOccurrence(1, now, java.util.Random(1), 23, 8, false, tz)
+        val b = MuninnReminderTimes.nextOccurrence(1, now, java.util.Random(2), 23, 8, false, tz)
+        assertTrue(a != b)
+        // never inside quiet hours
+        repeat(50) { seed ->
+            val t = MuninnReminderTimes.nextOccurrence(1, at(6, 19), java.util.Random(seed.toLong()), 23, 8, true, tz)
+            assertFalse(MuninnReminderTimes.isQuiet(t, 23, 8, tz))
+        }
+    }
+
     @Test fun dayKeyChangesAtMidnight() {
         assertEquals(MuninnReminderTimes.dayKey(at(6, 0, 1), tz), MuninnReminderTimes.dayKey(at(6, 23, 59), tz))
         assertTrue(MuninnReminderTimes.dayKey(at(7, 0, 1), tz) != MuninnReminderTimes.dayKey(at(6, 23, 59), tz))

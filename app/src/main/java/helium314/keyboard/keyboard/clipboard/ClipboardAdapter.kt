@@ -171,7 +171,19 @@ class ClipboardAdapter(
                     R.string.muninn_remind_next_week to MuninnReminderTimes.Preset.NEXT_WEEK,
                 ).forEach { (label, preset) -> presets[remind.add(label)] = preset }
             }
-            val removeReminder = if (clip.remindAt != null) menu.menu.add(R.string.muninn_remind_remove) else null
+            val removeReminder = if (clip.remindAt != null) menu.menu.add(R.string.muninn_reminder_stop) else null
+            // Layer 2: tags
+            val tagItems = mutableMapOf<MenuItem, String>()
+            if (!clip.isCode) {
+                val tagMenu = menu.menu.addSubMenu(R.string.muninn_tags)
+                val dao = helium314.keyboard.latin.database.ClipboardDao.getInstance(ctx)
+                (MuninnClips.BUILT_IN_TAGS + (dao?.allTags().orEmpty() - MuninnClips.BUILT_IN_TAGS.toSet())).forEach { tag ->
+                    val item = tagMenu.add(MuninnClips.tagLabel(ctx, tag))
+                    item.isCheckable = true
+                    item.isChecked = tag in clip.tags
+                    tagItems[item] = tag
+                }
+            }
             val deleteItem = if (!clip.isPinned) menu.menu.add(R.string.muninn_cache_delete) else null
             menu.setOnMenuItemClickListener { item ->
                 when {
@@ -187,9 +199,16 @@ class ClipboardAdapter(
                         if (at != null) onMenuAction(ctx.getString(R.string.muninn_remind_set, MuninnReminders.describeTime(ctx, at)))
                     }
                     item == removeReminder -> {
-                        MuninnReminders.done(ctx, id)
+                        MuninnReminders.stop(ctx, id)
                         notifyDataSetChanged()
-                        onMenuAction(ctx.getString(R.string.muninn_remind_remove))
+                        onMenuAction(ctx.getString(R.string.muninn_reminder_stop_feedback))
+                    }
+                    item in tagItems -> {
+                        val tag = tagItems[item]!!
+                        helium314.keyboard.latin.database.ClipboardDao.getInstance(ctx)?.toggleTag(id, tag)
+                        val now = manager.getHistoryEntryContent(id)?.tags?.contains(tag) == true
+                        notifyDataSetChanged()
+                        onMenuAction(ctx.getString(if (now) R.string.muninn_tag_added else R.string.muninn_tag_removed, MuninnClips.tagLabel(ctx, tag)))
                     }
                     item == deleteItem -> {
                         manager.clipboardDaoDelete(id)

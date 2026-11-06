@@ -10,6 +10,7 @@ import kotlinx.coroutines.delay
 import android.view.inputmethod.InputMethodManager
 import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -108,6 +109,7 @@ fun MainSettingsScreen(
             ) {
                 MuninnHeader()
                 CacheCard(onClickCache)
+                HowMuninnWorks()
                 PopularSettings()
 
                 Group(R.string.muninn_group_typing, R.string.muninn_group_typing_raven) {
@@ -203,6 +205,74 @@ private fun MuninnHeader() {
                 style = MaterialTheme.typography.labelMedium,
                 color = if (active) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary
             )
+        }
+    }
+}
+
+/**
+ * Muninn: every gesture and signal on one card, so one look is enough to know the whole keyboard.
+ * Open the first time; after "Got it" it folds into one line that can be opened again.
+ */
+@Composable
+private fun HowMuninnWorks() {
+    val ctx = LocalContext.current
+    var open by remember { mutableStateOf(!ctx.prefs().getBoolean(PREF_HOW_SEEN, false)) }
+    val gold = MaterialTheme.colorScheme.primary
+    Column(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(MaterialTheme.colorScheme.surfaceContainer)
+            .animateContentSize()
+    ) {
+        Row(
+            Modifier.fillMaxWidth().clickable { open = !open }.padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text("ᚱ", fontFamily = MuninnRunic, fontSize = 20.sp, color = gold, modifier = Modifier.width(24.dp))
+            Column(Modifier.weight(1f)) {
+                Text(stringResource(R.string.muninn_how_title), style = MaterialTheme.typography.titleMedium)
+                if (!open) Text(stringResource(R.string.muninn_how_subtitle), style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Icon(painterResource(R.drawable.ic_arrow_left), null, tint = MaterialTheme.colorScheme.outline,
+                modifier = Modifier.size(20.dp).rotate(if (open) 90f else 270f))
+        }
+        if (open) {
+            Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 6.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                HowRow(R.drawable.ic_muninn_feather_small, R.string.muninn_how_copy, stringResource(R.string.muninn_how_copy_does), gold = true)
+                HowRow(R.drawable.ic_arrow_horizontal, R.string.muninn_how_swipe_space, stringResource(R.string.muninn_how_swipe_space_does))
+                HowRow(R.drawable.ic_settings_gesture, R.string.muninn_how_hold_space, stringResource(R.string.muninn_how_hold_space_does))
+                HowRow(R.drawable.ic_muninn_pin, R.string.muninn_how_hold_clip, stringResource(R.string.muninn_how_hold_clip_does))
+                HowRow(R.drawable.ic_muninn_clipboard, R.string.muninn_how_gold, stringResource(R.string.muninn_how_gold_does), gold = true)
+                HowRow(R.drawable.ic_muninn_bell, R.string.muninn_how_chip, stringResource(R.string.muninn_how_chip_does), gold = true)
+                HowRow(R.drawable.ic_muninn_restore, R.string.muninn_how_deleted,
+                    stringResource(R.string.muninn_how_deleted_does, helium314.keyboard.latin.database.ClipboardDao.TRASH_DAYS))
+                HowRow(R.drawable.ic_muninn_keyboard, R.string.muninn_how_preview, stringResource(R.string.muninn_how_preview_does))
+            }
+            Row(Modifier.fillMaxWidth().padding(end = 6.dp, bottom = 4.dp), horizontalArrangement = Arrangement.End) {
+                androidx.compose.material3.TextButton(onClick = {
+                    open = false
+                    ctx.prefs().edit { putBoolean(PREF_HOW_SEEN, true) }
+                }) { Text(stringResource(R.string.muninn_how_got_it)) }
+            }
+        }
+    }
+}
+
+private const val PREF_HOW_SEEN = "muninn_how_it_works_seen"
+
+@Composable
+private fun HowRow(@DrawableRes icon: Int, @StringRes action: Int, result: String, gold: Boolean = false) {
+    val color = if (gold) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Box(
+            Modifier.size(36.dp).clip(RoundedCornerShape(11.dp)).background(color.copy(alpha = 0.13f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(painterResource(icon), null, tint = color, modifier = Modifier.size(18.dp))
+        }
+        Column(Modifier.weight(1f)) {
+            Text(stringResource(action), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+            Text(result, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

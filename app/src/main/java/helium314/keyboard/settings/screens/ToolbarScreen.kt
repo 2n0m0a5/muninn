@@ -68,7 +68,9 @@ fun ToolbarScreen(
     SearchSettingsScreen(
         onClickBack = onClickBack,
         title = stringResource(R.string.settings_screen_toolbar),
-        settings = items
+        settings = items,
+        intro = stringResource(R.string.muninn_intro_toolbar),
+        essentials = setOf(Settings.PREF_TOOLBAR_MODE, Settings.PREF_TOOLBAR_KEYS, Settings.PREF_PINNED_TOOLBAR_KEYS),
     )
 }
 

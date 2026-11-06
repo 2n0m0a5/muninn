@@ -31,6 +31,19 @@ object MuninnClips {
 
     fun isLink(text: String?) = text != null && linkPattern.matches(text.trim())
 
+    // ---- tags (Layer 2) ----
+
+    /** tags every Muninn has; people can add their own names too */
+    val BUILT_IN_TAGS = listOf("important", "watch", "buy", "idea")
+
+    fun tagLabel(context: Context, tag: String): String = when (tag) {
+        "important" -> context.getString(R.string.muninn_tag_important)
+        "watch" -> context.getString(R.string.muninn_tag_watch)
+        "buy" -> context.getString(R.string.muninn_tag_buy)
+        "idea" -> context.getString(R.string.muninn_tag_idea)
+        else -> tag
+    }
+
     /** what is shown instead of a code, so it can't be read over someone's shoulder */
     const val MASKED_CODE = "••• •••"
 
@@ -52,10 +65,11 @@ object MuninnClips {
     }
 
     /** "Telegram · 5 min. ago", or for codes "Code · deletes itself in 8 min." */
-    fun metaLine(context: Context, entry: ClipboardHistoryEntry, now: Long = System.currentTimeMillis()): String {
+    fun metaLine(context: Context, entry: ClipboardHistoryEntry, now: Long = System.currentTimeMillis(), tags: Boolean = true): String {
         justNow = context.getString(R.string.muninn_just_now)
         val parts = mutableListOf<String>()
         if (entry.isPinned) parts.add(context.getString(R.string.muninn_tab_pinned))
+        if (tags) entry.tags.forEach { parts.add(tagLabel(context, it)) }
         appLabel(context, entry.source)?.let { parts.add(it) }
         val deletedAt = entry.deletedAt
         val expiresAt = entry.expiresAt

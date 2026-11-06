@@ -82,6 +82,7 @@ fun PreferencesScreen(
         if (clipboardHistoryEnabled) Settings.PREF_MUNINN_SKIP_SENSITIVE else null,
         if (clipboardHistoryEnabled) Settings.PREF_MUNINN_EXPIRE_CODES else null,
         if (clipboardHistoryEnabled) Settings.PREF_MUNINN_KEEP_DELETED else null,
+        if (clipboardHistoryEnabled) Settings.PREF_MUNINN_LOCK_CACHE else null,
         if (clipboardHistoryEnabled) Settings.PREF_CLIPBOARD_HISTORY_PINNED_FIRST else null,
         if (clipboardHistoryEnabled) Settings.PREF_CLIPBOARD_USE_FILES else null,
         if (clipboardHistoryEnabled && prefs.getBoolean(Settings.PREF_CLIPBOARD_USE_FILES, Defaults.PREF_CLIPBOARD_USE_FILES))
@@ -90,7 +91,9 @@ fun PreferencesScreen(
     SearchSettingsScreen(
         onClickBack = onClickBack,
         title = stringResource(R.string.settings_screen_preferences),
-        settings = items
+        settings = items,
+        intro = stringResource(R.string.muninn_intro_preferences),
+        essentials = setOf(Settings.PREF_MUNINN_LOCK_CACHE, Settings.PREF_SHOW_NUMBER_ROW, Settings.PREF_SHOW_HINTS, Settings.PREF_POPUP_ON, Settings.PREF_VIBRATE_ON, Settings.PREF_SOUND_ON, Settings.PREF_SHOW_EMOJI_KEY, Settings.PREF_ENABLE_CLIPBOARD_HISTORY, Settings.PREF_MUNINN_SKIP_SENSITIVE, Settings.PREF_MUNINN_EXPIRE_CODES, Settings.PREF_MUNINN_KEEP_DELETED),
     )
 }
 
@@ -182,6 +185,9 @@ fun createPreferencesSettings(context: Context) = listOf(
     },
     Setting(context, Settings.PREF_MUNINN_EXPIRE_CODES, R.string.muninn_expire_codes, R.string.muninn_expire_codes_summary) {
         SwitchPreference(it, Defaults.PREF_MUNINN_EXPIRE_CODES)
+    },
+    Setting(context, Settings.PREF_MUNINN_LOCK_CACHE, R.string.muninn_lock_cache, R.string.muninn_lock_cache_summary) {
+        SwitchPreference(it, Defaults.PREF_MUNINN_LOCK_CACHE)
     },
     Setting(context, Settings.PREF_MUNINN_KEEP_DELETED, R.string.muninn_keep_deleted, R.string.muninn_keep_deleted_summary) {
         val ctx = LocalContext.current

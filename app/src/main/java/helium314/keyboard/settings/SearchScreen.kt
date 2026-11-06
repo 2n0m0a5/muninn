@@ -3,6 +3,10 @@ package helium314.keyboard.settings
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -59,6 +63,10 @@ fun SearchSettingsScreen(
     onClickBack: () -> Unit,
     title: String,
     settings: List<Any?>,
+    /** Muninn: one plain sentence at the top, saying what this screen is for */
+    intro: String? = null,
+    /** Muninn: the few settings most people need. Everything else folds away under "More options". */
+    essentials: Set<String>? = null,
     content: @Composable (ColumnScope.() -> Unit)? = null // overrides settings if not null
 ) {
     SearchScreen(
@@ -73,6 +81,11 @@ fun SearchSettingsScreen(
                     Column(
                         Modifier.verticalScroll(rememberScrollState()).then(Modifier.padding(innerPadding))
                     ) {
+                        if (intro != null) MuninnScreenIntro(intro)
+                        if (essentials != null) {
+                            MuninnEssentialsAndMore(settings, essentials)
+                            return@Column
+                        }
                         settings.forEach {
                             if (it is Int) {
                                 PreferenceCategory(stringResource(it))
@@ -243,5 +256,68 @@ fun ExpandableSearchField(
             textStyle = contentTextDirectionStyle,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search)
         )
+    }
+}
+
+/** Muninn: the sentence at the top of a settings screen */
+@Composable
+private fun MuninnScreenIntro(text: String) {
+    androidx.compose.material3.Text(
+        text,
+        style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+        color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 12.dp)
+    )
+}
+
+/**
+ * Muninn: progressive disclosure. The essentials sit in one card; the rest waits behind "More options",
+ * so a screen never greets you with thirty switches. Search (top right) still finds every setting.
+ */
+@Composable
+private fun MuninnEssentialsAndMore(settings: List<Any?>, essentials: Set<String>) {
+    val shown = settings.filterIsInstance<String>().filter { it in essentials }
+    val rest = settings.filter { it != null && !(it is String && it in essentials) }
+    val restCount = rest.count { it is String }
+    var expanded by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+    val shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp)
+    Column(
+        Modifier.padding(horizontal = 14.dp).fillMaxWidth()
+            .clip(shape).background(androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainer)
+            .padding(vertical = 4.dp)
+    ) {
+        shown.forEach { SettingsActivity.settingsContainer[it]?.Preference() }
+    }
+    if (restCount == 0) return
+    androidx.compose.foundation.layout.Row(
+        Modifier.padding(horizontal = 14.dp, vertical = 14.dp).fillMaxWidth()
+            .clip(shape)
+            .border(1.dp, androidx.compose.material3.MaterialTheme.colorScheme.outlineVariant, shape)
+            .clickable { expanded = !expanded }
+            .padding(horizontal = 18.dp, vertical = 14.dp),
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+    ) {
+        Column(Modifier.weight(1f)) {
+            androidx.compose.material3.Text(
+                stringResource(if (expanded) helium314.keyboard.latin.R.string.muninn_fewer_options else helium314.keyboard.latin.R.string.muninn_more_options),
+                style = androidx.compose.material3.MaterialTheme.typography.bodyLarge
+            )
+            androidx.compose.material3.Text(
+                stringResource(helium314.keyboard.latin.R.string.muninn_more_options_description, restCount),
+                style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        androidx.compose.material3.Text(if (expanded) "−" else "+", style = androidx.compose.material3.MaterialTheme.typography.titleLarge,
+            color = androidx.compose.material3.MaterialTheme.colorScheme.primary)
+    }
+    AnimatedVisibility(visible = expanded) {
+        Column {
+            rest.forEach {
+                if (it is Int) PreferenceCategory(stringResource(it))
+                else SettingsActivity.settingsContainer[it!!]?.Preference()
+            }
+            androidx.compose.foundation.layout.Spacer(Modifier.padding(bottom = 80.dp))
+        }
     }
 }
