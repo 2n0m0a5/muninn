@@ -144,6 +144,9 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
     private int mStartY;
     private long mStartTime;
     private boolean mInHorizontalSwipe = false;
+    // Muninn: one swipe on the space bar switches one language. Sliding on used to keep switching every few
+    // millimetres, rebuilding the keyboard under the finger again and again (the "glitch").
+    private boolean mLanguageSwitchedThisSwipe = false;
     private boolean mInVerticalSwipe = false;
 
     // true if keyboard layout has been changed.
@@ -706,6 +709,7 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
     }
 
     private void onDownEventInternal(final int x, final int y, final long eventTime) {
+        mLanguageSwitchedThisSwipe = false;
         Key key = onDownKey(x, y, eventTime);
         // Key selection by dragging finger is allowed when 1) key selection by dragging finger is
         // enabled by configuration, 2) this pointer starts dragging from modifier key, or 3) this
@@ -963,8 +967,10 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
                     sTimerProxy.cancelKeyTimersOf(this);
                     mInVerticalSwipe = true;
                 } else if (oneShotSwipe(sv.mSpaceSwipeVertical)) return;
+                if (sv.mSpaceSwipeVertical == KeyboardActionListener.SwipeAction.SWITCH_LANGUAGE && mLanguageSwitchedThisSwipe) return;
                 if (sListener.onVerticalSpaceSwipe(stepsY)) {
                     mStartY += stepsY * sPointerStep;
+                    if (sv.mSpaceSwipeVertical == KeyboardActionListener.SwipeAction.SWITCH_LANGUAGE) mLanguageSwitchedThisSwipe = true;
                 }
                 return;
             }
@@ -976,8 +982,10 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
                     sTimerProxy.cancelKeyTimersOf(this);
                     mInHorizontalSwipe = true;
                 } else if (oneShotSwipe(sv.mSpaceSwipeHorizontal)) return;
+                if (sv.mSpaceSwipeHorizontal == KeyboardActionListener.SwipeAction.SWITCH_LANGUAGE && mLanguageSwitchedThisSwipe) return;
                 if (sListener.onHorizontalSpaceSwipe(stepsX)) {
                     mStartX += stepsX * sPointerStep;
+                    if (sv.mSpaceSwipeHorizontal == KeyboardActionListener.SwipeAction.SWITCH_LANGUAGE) mLanguageSwitchedThisSwipe = true;
                 }
             }
         } else if (code == KeyCode.DELETE) {
@@ -1108,6 +1116,7 @@ public final class PointerTracker implements PointerTrackerQueue.Element,
             // Touchpad mode
             mTouchpadHandler.disableTouchpadMode();
 
+            mLanguageSwitchedThisSwipe = false;
             if (mInHorizontalSwipe || mInVerticalSwipe) {
                 mInHorizontalSwipe = false;
                 mInVerticalSwipe = false;

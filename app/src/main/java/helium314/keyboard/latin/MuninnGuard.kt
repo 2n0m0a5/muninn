@@ -50,6 +50,12 @@ object MuninnGuardLog {
         return list.take(MAX_ENTRIES).joinToString("\n") { "${it.time}\t${if (it.switchedBack) 1 else 0}\t${it.keyboard.replace('\n', ' ').replace('\t', ' ')}" }
     }
 
+    /** always a new line, for a takeover that came after Muninn was back */
+    fun addNew(stored: String?, entry: Entry): String = serialize(listOf(entry) + parse(stored))
+
+    private fun serialize(list: List<Entry>) =
+        list.take(MAX_ENTRIES).joinToString("\n") { "${it.time}\t${if (it.switchedBack) 1 else 0}\t${it.keyboard.replace('\n', ' ').replace('\t', ' ')}" }
+
     fun countSince(entries: List<Entry>, since: Long) = entries.count { it.time >= since }
 }
 
@@ -66,6 +72,7 @@ object MuninnGuard {
     private const val NOTIFICATION_ID = 7301
     private const val PREF_LOG = "muninn_guard_log"
     private const val PREF_PAUSED_UNTIL = "muninn_guard_paused_until"
+    private const val PREF_BACK_AT = "muninn_guard_back_at"
     private const val PAUSE_MS = 60 * 60 * 1000L
     const val ACTION_IT_WAS_ME = "app.muninn.keyboard.GUARD_IT_WAS_ME"
     const val ACTION_LET_STAY = "app.muninn.keyboard.GUARD_LET_STAY"
@@ -115,7 +122,13 @@ object MuninnGuard {
 
     private fun record(context: Context, label: String, switchedBack: Boolean) {
         val prefs = context.prefs()
-        prefs.edit { putString(PREF_LOG, MuninnGuardLog.add(prefs.getString(PREF_LOG, null), MuninnGuardLog.Entry(System.currentTimeMillis(), label, switchedBack))) }
+        val now = System.currentTimeMillis()
+        // Muninn was back in between: this is a new takeover, not the same one reported twice
+        val stored = prefs.getString(PREF_LOG, null)
+        val last = MuninnGuardLog.parse(stored).firstOrNull()
+        val sameOne = last != null && prefs.getLong(PREF_BACK_AT, 0) < last.time
+        val entry = MuninnGuardLog.Entry(now, label, switchedBack)
+        prefs.edit { putString(PREF_LOG, if (sameOne) MuninnGuardLog.add(stored, entry) else MuninnGuardLog.addNew(stored, entry)) }
     }
 
     /** wait for the next change of the default keyboard; called from the keyboard, the app, after restarts and updates */
@@ -138,11 +151,35 @@ object MuninnGuard {
         }
     }
 
+    private var observer: android.database.ContentObserver? = null
+
+    /** listens directly while the process runs; Android's job scheduler can hold jobs back for minutes on HyperOS */
+    fun watchWhileRunning(context: Context) {
+        if (observer != null) return
+        val app = context.applicationContext
+        val handler = android.os.Handler(android.os.Looper.getMainLooper())
+        val check = Runnable { check(app) }
+        observer = object : android.database.ContentObserver(handler) {
+            override fun onChange(selfChange: Boolean) {
+                // wait a moment: Android sets the new keyboard, then its subtype
+                handler.removeCallbacks(check)
+                handler.postDelayed(check, 400)
+            }
+        }
+        try {
+            app.contentResolver.registerContentObserver(
+                SystemSettings.Secure.getUriFor(SystemSettings.Secure.DEFAULT_INPUT_METHOD), false, observer!!)
+        } catch (e: Exception) {
+            Log.w(TAG, "can't watch the keyboard setting", e)
+        }
+    }
+
     /** look at the default keyboard now and act if another one took over */
     fun check(context: Context) {
         if (!enabled(context)) return
         if (isMuninnCurrent(context)) {
             NotificationManagerCompat.from(context).cancel(NOTIFICATION_ID)
+            context.prefs().edit { putLong(PREF_BACK_AT, System.currentTimeMillis()) }
             return
         }
         if (!isMuninnEnabled(context)) return // the person turned Muninn off in the system list: respect that

@@ -142,6 +142,9 @@ class SuggestionStripView(context: Context, attrs: AttributeSet?, defStyle: Int)
         colors.setBackground(toolbarExpandKey, ColorType.STRIP_BACKGROUND) // necessary because background is re-used for defaultToolbarBackground
         colors.setColor(toolbarExpandKey, ColorType.TOOL_BAR_EXPAND_KEY)
         colors.setColor(toolbarExpandKey.background, ColorType.TOOL_BAR_EXPAND_KEY_BACKGROUND)
+        // Muninn: the feather is gold, like everything else that belongs to Muninn's memory; the toolbar's
+        // own icon colour made it nearly invisible on Night Raven
+        toolbarExpandKey.setColorFilter(colors.get(ColorType.CLIPBOARD_PIN), android.graphics.PorterDuff.Mode.SRC_IN)
 
         // background indicator for pinned keys
         val color = colors.get(ColorType.TOOL_BAR_KEY_ENABLED_BACKGROUND) or -0x1000000 // ignore alpha (in Java this is more readable 0xFF000000)

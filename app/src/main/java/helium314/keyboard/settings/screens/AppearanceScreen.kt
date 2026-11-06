@@ -62,9 +62,6 @@ fun AppearanceScreen(
         Settings.PREF_ICON_STYLE,
         Settings.PREF_ACCENT_SHIFTED_ICON,
         Settings.PREF_CUSTOM_ICON_NAMES,
-        Settings.PREF_THEME_KEY_BORDERS,
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
-            Settings.PREF_THEME_DAY_NIGHT else null,
         Settings.PREF_THEME_COLORS,
         if (dayNightMode) Settings.PREF_THEME_COLORS_NIGHT else null,
         Settings.PREF_NAVBAR_COLOR,
@@ -80,7 +77,6 @@ fun AppearanceScreen(
             Settings.PREF_SPLIT_SPACER_SCALE_PREFIX else null,
         if (prefs.getBoolean(Settings.PREF_THEME_KEY_BORDERS, Defaults.PREF_THEME_KEY_BORDERS))
             Settings.PREF_KEY_GAP_SCALE_PREFIX else null,
-        Settings.PREF_KEYBOARD_HEIGHT_SCALE_PREFIX,
         Settings.PREF_BOTTOM_ROW_SCALE_PREFIX,
         Settings.PREF_BOTTOM_PADDING_SCALE_PREFIX,
         Settings.PREF_SIDE_PADDING_SCALE_PREFIX,
@@ -100,7 +96,7 @@ fun AppearanceScreen(
         title = stringResource(R.string.settings_screen_appearance),
         settings = items,
         intro = stringResource(R.string.muninn_intro_appearance),
-        essentials = setOf(Settings.PREF_THEME_COLORS, Settings.PREF_THEME_DAY_NIGHT, Settings.PREF_THEME_COLORS_NIGHT, Settings.PREF_THEME_STYLE, Settings.PREF_THEME_KEY_BORDERS, Settings.PREF_KEYBOARD_HEIGHT_SCALE_PREFIX, Settings.PREF_FONT_SCALE),
+        essentials = setOf(Settings.PREF_THEME_COLORS, Settings.PREF_THEME_COLORS_NIGHT, Settings.PREF_THEME_STYLE, Settings.PREF_FONT_SCALE, SettingsWithoutKey.BACKGROUND_IMAGE),
     )
 }
 

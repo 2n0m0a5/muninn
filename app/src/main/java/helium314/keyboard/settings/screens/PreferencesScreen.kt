@@ -51,19 +51,15 @@ fun PreferencesScreen(
         Settings.PREF_SHOW_POPUP_HINTS,
         Settings.PREF_SHOW_TLD_POPUP_KEYS,
         Settings.PREF_POPUP_ON,
-        if (AudioAndHapticFeedbackManager.getInstance().hasVibrator())
-            Settings.PREF_VIBRATE_ON else null,
         if (prefs.getBoolean(Settings.PREF_VIBRATE_ON, Defaults.PREF_VIBRATE_ON))
             Settings.PREF_VIBRATION_DURATION_SETTINGS else null,
         if (prefs.getBoolean(Settings.PREF_VIBRATE_ON, Defaults.PREF_VIBRATE_ON))
             Settings.PREF_VIBRATE_IN_DND_MODE else null,
-        Settings.PREF_SOUND_ON,
         if (prefs.getBoolean(Settings.PREF_SOUND_ON, Defaults.PREF_SOUND_ON))
             Settings.PREF_KEYPRESS_SOUND_VOLUME else null,
         Settings.PREF_SAVE_SUBTYPE_PER_APP,
         Settings.PREF_SHOW_EMOJI_DESCRIPTIONS,
         R.string.settings_category_additional_keys,
-        Settings.PREF_SHOW_NUMBER_ROW,
         if (SubtypeSettings.getEnabledSubtypes(true).any { it.locale().language in localesWithLocalizedNumberRow })
             Settings.PREF_LOCALIZED_NUMBER_ROW else null,
         if (prefs.getBoolean(Settings.PREF_SHOW_HINTS, Defaults.PREF_SHOW_HINTS)
@@ -78,11 +74,6 @@ fun PreferencesScreen(
         Settings.PREF_REMOVE_REDUNDANT_POPUPS,
         R.string.settings_category_clipboard_history,
         Settings.PREF_ENABLE_CLIPBOARD_HISTORY,
-        if (clipboardHistoryEnabled) Settings.PREF_CLIPBOARD_HISTORY_RETENTION_TIME else null,
-        if (clipboardHistoryEnabled) Settings.PREF_MUNINN_SKIP_SENSITIVE else null,
-        if (clipboardHistoryEnabled) Settings.PREF_MUNINN_EXPIRE_CODES else null,
-        if (clipboardHistoryEnabled) Settings.PREF_MUNINN_KEEP_DELETED else null,
-        if (clipboardHistoryEnabled) Settings.PREF_MUNINN_LOCK_CACHE else null,
         if (clipboardHistoryEnabled) Settings.PREF_CLIPBOARD_HISTORY_PINNED_FIRST else null,
         if (clipboardHistoryEnabled) Settings.PREF_CLIPBOARD_USE_FILES else null,
         if (clipboardHistoryEnabled && prefs.getBoolean(Settings.PREF_CLIPBOARD_USE_FILES, Defaults.PREF_CLIPBOARD_USE_FILES))
@@ -93,7 +84,7 @@ fun PreferencesScreen(
         title = stringResource(R.string.settings_screen_preferences),
         settings = items,
         intro = stringResource(R.string.muninn_intro_preferences),
-        essentials = setOf(Settings.PREF_MUNINN_LOCK_CACHE, Settings.PREF_SHOW_NUMBER_ROW, Settings.PREF_SHOW_HINTS, Settings.PREF_POPUP_ON, Settings.PREF_VIBRATE_ON, Settings.PREF_SOUND_ON, Settings.PREF_SHOW_EMOJI_KEY, Settings.PREF_ENABLE_CLIPBOARD_HISTORY, Settings.PREF_MUNINN_SKIP_SENSITIVE, Settings.PREF_MUNINN_EXPIRE_CODES, Settings.PREF_MUNINN_KEEP_DELETED),
+        essentials = setOf(Settings.PREF_SHOW_HINTS, Settings.PREF_POPUP_ON, Settings.PREF_SHOW_EMOJI_KEY, Settings.PREF_SHOW_LANGUAGE_SWITCH_KEY, Settings.PREF_ENABLE_CLIPBOARD_HISTORY),
     )
 }
 

@@ -62,13 +62,11 @@ fun TextCorrectionScreen(
         SettingsWithoutKey.EDIT_PERSONAL_DICTIONARY,
         R.string.settings_category_correction,
         Settings.PREF_BLOCK_POTENTIALLY_OFFENSIVE,
-        Settings.PREF_AUTO_CORRECTION,
         if (autocorrectEnabled) Settings.PREF_MORE_AUTO_CORRECTION else null,
         if (autocorrectEnabled) Settings.PREF_AUTOCORRECT_SHORTCUTS else null,
         if (autocorrectEnabled) Settings.PREF_AUTOCORRECT_CAPITALIZED_SUGGESTION else null,
         if (autocorrectEnabled) Settings.PREF_AUTO_CORRECT_CONFIDENCE else null,
         if (autocorrectEnabled) Settings.PREF_BACKSPACE_REVERTS_AUTOCORRECT else null,
-        Settings.PREF_AUTO_CAP,
         R.string.settings_category_space,
         Settings.PREF_KEY_USE_DOUBLE_SPACE_PERIOD,
         Settings.PREF_AUTOSPACE_AFTER_PUNCTUATION,
@@ -77,7 +75,6 @@ fun TextCorrectionScreen(
         if (gestureEnabled) Settings.PREF_AUTOSPACE_AFTER_GESTURE_TYPING else null,
         Settings.PREF_SHIFT_REMOVES_AUTOSPACE,
         R.string.settings_category_suggestions,
-        if (suggestionsVisible) Settings.PREF_SHOW_SUGGESTIONS else null,
         if (suggestionsEnabled) Settings.PREF_ALWAYS_SHOW_SUGGESTIONS else null,
         if (suggestionsEnabled && prefs.getBoolean(Settings.PREF_ALWAYS_SHOW_SUGGESTIONS, Defaults.PREF_ALWAYS_SHOW_SUGGESTIONS))
             Settings.PREF_ALWAYS_SHOW_SUGGESTIONS_EXCEPT_WEB_TEXT else null,
@@ -102,7 +99,7 @@ fun TextCorrectionScreen(
         title = stringResource(R.string.settings_screen_correction),
         settings = items,
         intro = stringResource(R.string.muninn_intro_correction),
-        essentials = setOf(Settings.PREF_AUTO_CORRECTION, Settings.PREF_SHOW_SUGGESTIONS, Settings.PREF_BIGRAM_PREDICTIONS, Settings.PREF_AUTO_CAP, Settings.PREF_KEY_USE_DOUBLE_SPACE_PERIOD, SettingsWithoutKey.EDIT_PERSONAL_DICTIONARY),
+        essentials = setOf(Settings.PREF_BIGRAM_PREDICTIONS, Settings.PREF_KEY_USE_DOUBLE_SPACE_PERIOD, Settings.PREF_MORE_AUTO_CORRECTION, Settings.PREF_BLOCK_POTENTIALLY_OFFENSIVE, SettingsWithoutKey.EDIT_PERSONAL_DICTIONARY),
     )
 }
 

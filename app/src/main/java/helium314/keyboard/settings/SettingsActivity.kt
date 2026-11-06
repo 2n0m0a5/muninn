@@ -92,7 +92,14 @@ open class SettingsActivity : ComponentActivity(), SharedPreferences.OnSharedPre
         val cv = ComposeView(context = this)
         setContentView(cv)
         cv.setContent {
-            Theme {
+            val dark = helium314.keyboard.latin.utils.muninnDark()
+            androidx.compose.runtime.LaunchedEffect(dark) {
+                androidx.core.view.WindowCompat.getInsetsController(window, window.decorView).apply {
+                    isAppearanceLightStatusBars = !dark
+                    isAppearanceLightNavigationBars = !dark
+                }
+            }
+            Theme(dark) {
                 Surface {
                     val dictUri by dictUriFlow.collectAsState()
                     val crashReports by crashReportFiles.collectAsState()

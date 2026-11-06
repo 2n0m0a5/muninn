@@ -123,7 +123,6 @@ fun MainSettingsScreen(
             CacheCard(version, onClickCache)
             Spaces(onClickTyping, onClickMemory, onClickLook, onClickGuard)
             HowMuninnWorks()
-            QuickSwitches()
             Footer(onClickAbout, onClickAdvanced)
         }
     }
@@ -365,42 +364,6 @@ private fun SpaceTile(rune: String, name: String, sub: String, ink: Color, modif
             Text(name, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = if (gold) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
             Text(sub, fontSize = 12.5.sp, lineHeight = 17.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-    }
-}
-
-/** three switches people flip often, as tiles: gold when on */
-@Composable
-private fun QuickSwitches() {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(stringResource(R.string.muninn_quick_switches).uppercase(), fontSize = 12.sp, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 6.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            QuickTile(Settings.PREF_VIBRATE_ON, Defaults.PREF_VIBRATE_ON, R.string.muninn_quick_vibration, Modifier.weight(1f))
-            QuickTile(Settings.PREF_SOUND_ON, Defaults.PREF_SOUND_ON, R.string.muninn_quick_sounds, Modifier.weight(1f))
-            QuickTile(Settings.PREF_SHOW_NUMBER_ROW, Defaults.PREF_SHOW_NUMBER_ROW, R.string.muninn_popular_number_row, Modifier.weight(1f))
-        }
-    }
-}
-
-@Composable
-private fun QuickTile(key: String, default: Boolean, @StringRes label: Int, modifier: Modifier) {
-    val ctx = LocalContext.current
-    val haptic = LocalHapticFeedback.current
-    var on by remember { mutableStateOf(ctx.prefs().getBoolean(key, default)) }
-    Column(
-        modifier.height(72.dp).clip(RoundedCornerShape(16.dp))
-            .background(if (on) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f) else MaterialTheme.colorScheme.surfaceContainerHigh)
-            .clickable {
-                on = !on
-                ctx.prefs().edit { putBoolean(key, on) }
-                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-            }
-            .padding(12.dp),
-        verticalArrangement = Arrangement.SpaceBetween
-    ) {
-        val color = if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f)
-        Text(stringResource(label), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = color, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        Text(stringResource(if (on) R.string.muninn_on else R.string.muninn_off), fontSize = 11.5.sp, color = color.copy(alpha = 0.8f))
     }
 }
 

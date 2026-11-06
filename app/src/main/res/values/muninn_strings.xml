@@ -237,8 +237,8 @@
     <string name="muninn_space_typing_sub">Huginn · %s</string>
     <string name="muninn_space_memory">Memory</string>
     <string name="muninn_space_memory_sub">Muninn · keeping, reminders, tags</string>
-    <string name="muninn_space_look">Look</string>
-    <string name="muninn_space_look_sub">Themes, key size, borders</string>
+    <string name="muninn_space_look">Look &amp; feel</string>
+    <string name="muninn_space_look_sub">Themes, keys, sound and touch</string>
     <string name="muninn_space_guard_sub">Keeps Muninn your keyboard</string>
     <string name="muninn_guard_soon">Guard comes in a later version</string>
     <string name="muninn_quick_switches">Quick switches</string>
@@ -424,7 +424,7 @@
     <string name="muninn_guard_check_notifications_ok">Allowed, so Muninn can tell you</string>
     <string name="muninn_guard_check_notifications_fix">Needed to tell you when a keyboard takes over</string>
     <string name="muninn_guard_check_battery">Battery</string>
-    <string name="muninn_guard_check_battery_ok">No restrictions for Muninn</string>
+    <string name="muninn_guard_check_battery_ok">No restrictions. Tap to check again.</string>
     <string name="muninn_guard_check_battery_fix">Set to “No restrictions” so the guard is not put to sleep</string>
     <string name="muninn_guard_check_autostart">Autostart</string>
     <string name="muninn_guard_check_autostart_sub">Allow it for Muninn, so the guard works after a restart</string>
@@ -462,4 +462,19 @@
     <string name="muninn_share_saved_already">It is already saved. Done adds the tags and the reminder.</string>
     <string name="muninn_how_share">Share anything to Muninn</string>
     <string name="muninn_how_share_does">from TikTok, YouTube, Instagram, or “Keep in Muninn” on selected text</string>
+
+    <!-- Muninn 0.7.1 -->
+    <string name="muninn_look_touch_sound">Touch and sound</string>
+    <string name="muninn_vibration_sub">A light tap with every key</string>
+    <string name="muninn_sounds_sub">A soft click with every key</string>
+    <string name="muninn_look_app">The Muninn app</string>
+    <string name="muninn_app_theme">App theme</string>
+    <string name="muninn_app_theme_sub">How this app looks. The keyboard has its own theme above.</string>
+    <string name="muninn_app_theme_phone">Phone</string>
+    <string name="muninn_app_theme_light">Light</string>
+    <string name="muninn_app_theme_dark">Dark</string>
+    <string name="muninn_gesture_off">Swipe to type is off. Turn it on in Typing, and its settings show up here.</string>
+    <string name="muninn_guard_check_battery_hyperos">Set Battery saver to “No restrictions”. HyperOS does not let apps check it, so tick it when done.</string>
+    <string name="muninn_guard_check_autostart_ok">Allowed. Tap to check again.</string>
+    <string name="muninn_guard_did_it">Done</string>
 </resources>

@@ -183,19 +183,26 @@ fun MuninnGuardScreen(onClickBack: () -> Unit) {
                     if (Build.VERSION.SDK_INT >= 33) notifyPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
                     else ctx.startActivity(Intent(SystemSettings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + ctx.packageName)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                 }
-                CheckRow(battery, stringResource(R.string.muninn_guard_check_battery),
+                if (isXiaomiFamily()) {
+                    // HyperOS keeps its own battery list ("No restrictions") and Autostart list, and no app can read
+                    // either. So: open the right page, then the person ticks it off.
+                    ManualCheckRow(battery, "muninn_guard_battery_done", stringResource(R.string.muninn_guard_check_battery),
+                        stringResource(R.string.muninn_guard_check_battery_hyperos), stringResource(R.string.muninn_guard_check_battery_ok)) {
+                        openHyperOsBattery(ctx)
+                    }
+                    ManualCheckRow(false, "muninn_guard_autostart_done", stringResource(R.string.muninn_guard_check_autostart),
+                        stringResource(R.string.muninn_guard_check_autostart_sub), stringResource(R.string.muninn_guard_check_autostart_ok), divider = false) {
+                        openAutostartSettings(ctx)
+                    }
+                } else CheckRow(battery, stringResource(R.string.muninn_guard_check_battery),
                     stringResource(if (battery) R.string.muninn_guard_check_battery_ok else R.string.muninn_guard_check_battery_fix),
-                    divider = isXiaomiFamily()) {
+                    divider = false) {
                     try {
                         ctx.startActivity(Intent(SystemSettings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:" + ctx.packageName))
                             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                     } catch (_: Exception) {
                         ctx.startActivity(Intent(SystemSettings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                     }
-                }
-                if (isXiaomiFamily()) MuninnRowItem(stringResource(R.string.muninn_guard_check_autostart), stringResource(R.string.muninn_guard_check_autostart_sub),
-                    divider = false, onClick = { openAutostartSettings(ctx) }) {
-                    OutlineButton(stringResource(R.string.muninn_open), height = 38.dp) { openAutostartSettings(ctx) }
                 }
             }
         }
@@ -218,6 +225,45 @@ fun MuninnGuardScreen(onClickBack: () -> Unit) {
                     }
                 }
             }
+        }
+    }
+}
+
+/** HyperOS's battery saver page for Muninn ("No restrictions" lives there); the app's own page if it can't be opened */
+fun openHyperOsBattery(ctx: Context) {
+    val label = ctx.applicationInfo.loadLabel(ctx.packageManager).toString()
+    val miui = Intent("miui.intent.action.HIDDEN_APPS_CONFIG_ACTIVITY")
+        .putExtra("package_name", ctx.packageName).putExtra("package_label", label).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    try { ctx.startActivity(miui) } catch (_: Exception) {
+        ctx.startActivity(Intent(SystemSettings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + ctx.packageName)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    }
+}
+
+/**
+ * A step the phone won't let Muninn check: "Open" takes you there; after that, a "Done" tick you press yourself.
+ * [autoOk] marks it done when Android can confirm it after all.
+ */
+@Composable
+private fun ManualCheckRow(autoOk: Boolean, prefKey: String, title: String, todo: String, doneText: String, divider: Boolean = true, onOpen: () -> Unit) {
+    val ctx = LocalContext.current
+    val haptic = LocalHapticFeedback.current
+    var done by remember { mutableStateOf(ctx.prefs().getBoolean(prefKey, false)) }
+    var opened by remember { mutableStateOf(false) }
+    val ok = autoOk || done
+    MuninnRowItem(title, if (ok) doneText else todo, divider = divider, onClick = { opened = true; onOpen() }) {
+        when {
+            ok -> Box(Modifier.size(28.dp).clip(CircleShape).background(Green.copy(alpha = 0.16f)), contentAlignment = Alignment.Center) {
+                Icon(painterResource(R.drawable.ic_muninn_check), null, tint = Green, modifier = Modifier.size(16.dp))
+            }
+            opened -> Box(
+                Modifier.height(36.dp).clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.primary).clickable {
+                    done = true
+                    ctx.prefs().edit().putBoolean(prefKey, true).apply()
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                }.padding(horizontal = 14.dp),
+                contentAlignment = Alignment.Center
+            ) { Text(stringResource(R.string.muninn_guard_did_it), color = MaterialTheme.colorScheme.onPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold) }
+            else -> OutlineButton(stringResource(R.string.muninn_open), height = 36.dp) { opened = true; onOpen() }
         }
     }
 }

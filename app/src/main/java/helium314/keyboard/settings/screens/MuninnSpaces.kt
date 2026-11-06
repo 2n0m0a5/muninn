@@ -92,6 +92,8 @@ import helium314.keyboard.settings.MuninnSwitch
 import helium314.keyboard.settings.OutlineButton
 import helium314.keyboard.settings.TagPill
 import helium314.keyboard.latin.utils.MuninnRunic
+import helium314.keyboard.latin.utils.MuninnAppTheme
+import helium314.keyboard.latin.AudioAndHapticFeedbackManager
 
 /* Muninn: the four spaces on the home screen. Each shows the few settings people change; More options holds the rest. */
 
@@ -473,6 +475,39 @@ fun MuninnLookScreen(onClickBack: () -> Unit, onClickAppearance: () -> Unit) {
                         AnimatedVisibility(more) {
                             MuninnRowItem(stringResource(R.string.settings_screen_appearance), stringResource(R.string.muninn_appearance_description),
                                 icon = R.drawable.ic_settings_appearance, divider = false, onClick = onClickAppearance) { Chevron() }
+                        }
+                    }
+                }
+
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    MuninnLabel(stringResource(R.string.muninn_look_touch_sound))
+                    MuninnCard {
+                        if (AudioAndHapticFeedbackManager.getInstance().hasVibrator())
+                            MuninnPrefSwitch(Settings.PREF_VIBRATE_ON, Defaults.PREF_VIBRATE_ON,
+                                stringResource(R.string.muninn_quick_vibration), stringResource(R.string.muninn_vibration_sub)) { reload() }
+                        MuninnPrefSwitch(Settings.PREF_SOUND_ON, Defaults.PREF_SOUND_ON,
+                            stringResource(R.string.muninn_quick_sounds), stringResource(R.string.muninn_sounds_sub), divider = false) { reload() }
+                    }
+                }
+
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    MuninnLabel(stringResource(R.string.muninn_look_app))
+                    MuninnCard {
+                        Column(Modifier.padding(horizontal = 14.dp, vertical = 13.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Text(stringResource(R.string.muninn_app_theme), fontSize = 15.sp, fontWeight = FontWeight.Medium)
+                                Text(stringResource(R.string.muninn_app_theme_sub), fontSize = 12.5.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            var appTheme by remember { mutableIntStateOf(prefs.getInt(MuninnAppTheme.PREF, 0)) }
+                            MuninnSegmented(
+                                listOf(stringResource(R.string.muninn_app_theme_phone), stringResource(R.string.muninn_app_theme_light), stringResource(R.string.muninn_app_theme_dark)),
+                                appTheme
+                            ) {
+                                appTheme = it
+                                prefs.edit { putInt(MuninnAppTheme.PREF, it) }
+                                MuninnAppTheme.mode = it
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            }
                         }
                     }
                 }

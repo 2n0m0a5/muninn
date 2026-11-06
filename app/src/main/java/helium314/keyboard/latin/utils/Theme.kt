@@ -3,6 +3,8 @@ package helium314.keyboard.latin.utils
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
@@ -124,8 +126,21 @@ val MuninnSans = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) FontFamily(
 /** Noto Sans Runic: ᛗᚢᚾᛁᚾᚾ, used only as decoration */
 val MuninnRunic = FontFamily(Font(R.font.muninn_runic))
 
+/** Muninn: how the app itself looks, chosen in Look & feel. 0 = follow the phone, 1 = light, 2 = dark. */
+object MuninnAppTheme {
+    const val PREF = "muninn_app_theme"
+    var mode by androidx.compose.runtime.mutableIntStateOf(-1) // -1 = not read yet
+}
+
 @Composable
-fun Theme(dark: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
+fun muninnDark(): Boolean {
+    val mode = MuninnAppTheme.mode.takeIf { it >= 0 }
+        ?: androidx.compose.ui.platform.LocalContext.current.prefs().getInt(MuninnAppTheme.PREF, 0)
+    return when (mode) { 1 -> false; 2 -> true; else -> isSystemInDarkTheme() }
+}
+
+@Composable
+fun Theme(dark: Boolean = muninnDark(), content: @Composable () -> Unit) {
     val base = Typography()
     fun TextStyle.sans(weight: FontWeight? = null) = copy(fontFamily = MuninnSans, fontWeight = weight ?: fontWeight)
     val serifTitle = base.titleLarge.copy(fontFamily = MuninnSerif, fontStyle = FontStyle.Italic, fontWeight = FontWeight.Normal, fontSize = 30.sp, lineHeight = 34.sp)

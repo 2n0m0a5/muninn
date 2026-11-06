@@ -39,6 +39,9 @@ class App : Application() {
         }
 
         RichInputMethodManager.init(this)
+        // Muninn, Layer 4: while Muninn's process lives (always the case at the moment you switch away from it),
+        // hear about keyboard changes at once; the background job covers the times it is not running
+        MuninnGuard.watchWhileRunning(this)
         checkVersionUpgrade(this)
         if (BuildConfig.DEBUG) // do this on every debug apk start because we may work on adding a new toolbar key
             upgradeToolbarPrefs(prefs())

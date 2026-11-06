@@ -37,7 +37,6 @@ fun GestureTypingScreen(
     val gestureFloatingPreviewEnabled = prefs.getBoolean(Settings.PREF_GESTURE_FLOATING_PREVIEW_TEXT, Defaults.PREF_GESTURE_FLOATING_PREVIEW_TEXT)
     val gestureEnabled = prefs.getBoolean(Settings.PREF_GESTURE_INPUT, Defaults.PREF_GESTURE_INPUT)
     val items = listOf(
-        Settings.PREF_GESTURE_INPUT,
         if (gestureEnabled)
             Settings.PREF_GESTURE_PREVIEW_TRAIL else null,
         if (gestureEnabled)
@@ -55,6 +54,8 @@ fun GestureTypingScreen(
     SearchSettingsScreen(
         onClickBack = onClickBack,
         title = stringResource(R.string.settings_screen_gesture),
+        // Muninn: the on/off switch lives in Typing; say so when the rest has nothing to show
+        intro = if (gestureEnabled) null else stringResource(R.string.muninn_gesture_off),
         settings = items
     )
 }

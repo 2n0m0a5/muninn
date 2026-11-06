@@ -37,7 +37,7 @@ class MuninnScreenshots {
     private fun shoot(name: String, heightDp: Int = 870, content: @Composable () -> Unit) {
         Assume.assumeTrue(out != null)
         val activity = Robolectric.buildActivity(ComponentActivity::class.java).setup().get()
-        activity.setContent { Theme(true) { content() } }
+        activity.setContent { Theme { content() } }
         shadowOf(Looper.getMainLooper()).idle()
         val view = activity.window.decorView
         val density = activity.resources.displayMetrics.density
@@ -91,6 +91,15 @@ class MuninnScreenshots {
         view.draw(canvas)
         File(out!!).mkdirs()
         File(out, "share.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+    }
+    @Test fun homeLight() { light { shoot("home_light", 1240) { MainSettingsScreen({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}) } } }
+    @Test fun lookLight() { light { shoot("look_light", 1500) { MuninnLookScreen({}, {}) } } }
+    @Test fun guardLight() { light { shoot("guard_light", 1200) { helium314.keyboard.settings.screens.MuninnGuardScreen {} } } }
+    @Test fun cacheLight() { light { shoot("cache_light") { MuninnCacheScreen {} } } }
+
+    private fun light(block: () -> Unit) {
+        helium314.keyboard.latin.utils.MuninnAppTheme.mode = 1
+        try { block() } finally { helium314.keyboard.latin.utils.MuninnAppTheme.mode = -1 }
     }
     @Test fun welcome() = shoot("welcome") { WelcomeWizard({}, {}) }
     @Test fun guard() = shoot("guard", 1100) { helium314.keyboard.settings.screens.MuninnGuardScreen {} }
