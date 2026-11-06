@@ -24,11 +24,16 @@ class Database private constructor(context: Context, name: String = NAME) : SQLi
             db.execSQL(ClipboardDao.ADD_FILE_COLUMN)
             db.execSQL(ClipboardDao.ADD_MIME_TYPE_COLUMN)
         }
+        if (oldVersion <= 3) { // Muninn: the cache
+            db.execSQL(ClipboardDao.ADD_SOURCE_COLUMN)
+            db.execSQL(ClipboardDao.ADD_DELETED_COLUMN)
+            db.execSQL(ClipboardDao.ADD_EXPIRES_COLUMN)
+        }
     }
 
     companion object {
         private val TAG = Database::class.java.simpleName
-        private const val VERSION = 3
+        private const val VERSION = 4
         const val NAME = "heliboard.db"
         private var instance: Database? = null
         fun getInstance(context: Context): Database {

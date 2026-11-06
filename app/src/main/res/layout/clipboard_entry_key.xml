@@ -41,6 +41,14 @@
             android:layout_height="wrap_content"
             android:ellipsize="end"
             android:maxLines="4"/>
+        <!-- Muninn: app and time, e.g. "Telegram · 5 min. ago" -->
+        <TextView
+            android:id="@+id/clipboard_entry_meta"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:ellipsize="end"
+            android:maxLines="1"/>
     </LinearLayout>
 
 </LinearLayout>

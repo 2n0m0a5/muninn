@@ -77,13 +77,23 @@ class ClipboardHistoryManager(
         val clipItem = clipData.getItemAt(0) ?: return
         val description = clipData.description ?: return
         val timeStamp = ClipboardManagerCompat.getClipTimestamp(clipData)
+        val settings = latinIME.mSettings.current
+
+        // Muninn: never keep what an app marks as secret (copied passwords, for example)
+        if (settings.mMuninnSkipSensitive && ClipboardManagerCompat.getClipSensitivity(description) == true) return
+        // Muninn: remember which app the clip came from (the app whose text field the keyboard last served)
+        val source = latinIME.currentInputEditorInfo?.packageName?.takeIf { it != latinIME.packageName }
 
         if (description.hasMimeType("text/*")) {
             val content = clipItem.coerceToText(latinIME)
             if (TextUtils.isEmpty(content)) return
-            clipboardDao?.addClip(timeStamp, false, content.toString())
+            val text = content.toString()
+            // Muninn: one-time codes delete themselves
+            val expiresAt = if (settings.mMuninnExpireCodes && MuninnClips.isOneTimeCode(text))
+                System.currentTimeMillis() + MuninnClips.CODE_LIFETIME_MS else null
+            clipboardDao?.addClip(timeStamp, false, text, source, expiresAt)
         } else if (maySaveFromUri(clipItem.uri, latinIME)) {
-            clipboardDao?.addClipUri(timeStamp, false, clipItem.uri, description, latinIME)
+            clipboardDao?.addClipUri(timeStamp, false, clipItem.uri, description, latinIME, source)
         }
     }
 
@@ -148,12 +158,37 @@ class ClipboardHistoryManager(
         removeClipboardSuggestion()
     }
 
-    fun canRemove(index: Int) = clipboardDao?.isPinned(index) == false
+    /** Muninn: which clips the panel shows */
+    enum class CacheView { ALL, PINNED, TRASH }
+    var cacheView = CacheView.ALL
+
+    private fun shownClips(): List<ClipboardHistoryEntry> = when (cacheView) {
+        CacheView.ALL -> clipboardDao?.getAll().orEmpty()
+        CacheView.PINNED -> clipboardDao?.getAll().orEmpty().filter { it.isPinned }
+        CacheView.TRASH -> clipboardDao?.getTrash().orEmpty()
+    }
+
+    fun canRemove(index: Int) = when (cacheView) {
+        CacheView.ALL -> clipboardDao?.isPinned(index) == false
+        CacheView.PINNED -> false
+        CacheView.TRASH -> true
+    }
 
     fun removeEntry(index: Int) {
-        if (canRemove(index))
-            clipboardDao?.deleteClipAt(index)
+        if (!canRemove(index)) return
+        if (cacheView == CacheView.TRASH) shownClips().getOrNull(index)?.let { clipboardDao?.deleteForever(listOf(it)) }
+        else clipboardDao?.deleteClipAt(index)
     }
+
+    fun restoreClip(id: Long) = clipboardDao?.restore(id)
+
+    fun deleteClipForever(id: Long) = clipboardDao?.getTrash()?.firstOrNull { it.id == id }?.let { clipboardDao?.deleteForever(listOf(it)) }
+
+    fun emptyTrash() = clipboardDao?.emptyTrash()
+
+    fun pinnedCount() = clipboardDao?.getAll()?.count { it.isPinned } ?: 0
+
+    fun trashCount() = clipboardDao?.trashCount() ?: 0
 
     fun sortHistoryEntries() {
         clipboardDao?.sort()
@@ -163,9 +198,9 @@ class ClipboardHistoryManager(
     // when history is about to be shown
     fun prepareClipboardHistory() = clipboardDao?.clearOldClips(true)
 
-    fun getHistorySize() = clipboardDao?.count() ?: 0
+    fun getHistorySize() = shownClips().size
 
-    fun getHistoryEntry(position: Int) = clipboardDao?.getAt(position)
+    fun getHistoryEntry(position: Int) = shownClips().getOrNull(position)
 
     fun getHistoryEntryContent(id: Long) = clipboardDao?.get(id)
 

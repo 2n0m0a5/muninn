@@ -37,7 +37,9 @@ class ClipboardLayoutParams(ctx: Context) {
         bottomRowKeyboardHeight = (defaultKeyboardHeight - bottomPadding - topPadding) / rowCount - keyVerticalGap / 2
         // height calculation is not good enough, probably also because keyboard top padding might be off by a pixel (see KeyboardParser)
         val offset = 1.25f * res.displayMetrics.density * sv.mKeyboardHeightScale
-        listHeight = defaultKeyboardHeight - bottomRowKeyboardHeight - bottomPadding + offset.toInt()
+        // Muninn: the tab row (All / Pinned / Recently deleted) takes some of the height
+        val tabsHeight = res.getDimensionPixelSize(R.dimen.muninn_clipboard_tabs_height)
+        listHeight = defaultKeyboardHeight - bottomRowKeyboardHeight - bottomPadding + offset.toInt() - tabsHeight
     }
 
     fun setListProperties(recycler: RecyclerView) {

@@ -14,6 +14,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import helium314.keyboard.latin.ClipboardHistoryEntry
 import helium314.keyboard.latin.ClipboardHistoryManager
+import helium314.keyboard.latin.MuninnClips
 import helium314.keyboard.latin.R
 import helium314.keyboard.latin.common.ColorType
 import helium314.keyboard.latin.settings.Settings
@@ -24,6 +25,9 @@ class ClipboardAdapter(
 ) : RecyclerView.Adapter<ClipboardAdapter.ViewHolder>() {
 
     var clipboardHistoryManager: ClipboardHistoryManager? = null
+
+    /** Muninn: called when the shown list changed in a way the panel can't follow item by item */
+    var onCacheChanged: () -> Unit = { notifyDataSetChanged() }
 
     var pinnedIconResId = 0
     var itemBackgroundId = 0
@@ -52,6 +56,7 @@ class ClipboardAdapter(
         private val pinnedIconView: ImageView
         private val contentTextView: TextView
         private val contentImageView: ImageView
+        private val metaTextView: TextView
 
         init {
             view.apply {
@@ -72,6 +77,11 @@ class ClipboardAdapter(
                 setTextSize(TypedValue.COMPLEX_UNIT_PX, itemTextSize)
             }
             contentImageView = view.findViewById(R.id.clipboard_entry_image_content)
+            metaTextView = view.findViewById<TextView>(R.id.clipboard_entry_meta).apply {
+                typeface = itemTypeFace
+                setTextColor(Settings.getValues().mColors.get(ColorType.KEY_HINT_TEXT))
+                setTextSize(TypedValue.COMPLEX_UNIT_PX, itemTextSize * 0.72f)
+            }
             clipboardLayoutParams.setItemProperties(view)
             val colors = Settings.getValues().mColors
             colors.setColor(pinnedIconView, ColorType.CLIPBOARD_PIN)
@@ -82,9 +92,15 @@ class ClipboardAdapter(
             itemView.tag = historyEntry.id
             if (historyEntry.filename != null) {
                 historyEntry.setImageAndDescription(contentImageView, contentTextView)
+            } else if (historyEntry.isCode) {
+                contentTextView.text = MuninnClips.MASKED_CODE // Muninn: codes stay hidden, tapping still pastes them
             } else {
                 contentTextView.text = historyEntry.text?.take(1000) // truncate displayed text for performance reasons
             }
+            // Muninn: app and time under the clip
+            val inTrash = clipboardHistoryManager?.cacheView == ClipboardHistoryManager.CacheView.TRASH
+            val meta = MuninnClips.metaLine(itemView.context, historyEntry)
+            metaTextView.text = if (inTrash) meta + " · " + itemView.context.getString(R.string.muninn_trash_hint) else meta
             pinnedIconView.visibility = if (historyEntry.isPinned) View.VISIBLE else View.GONE
             contentImageView.visibility = if (historyEntry.filename != null) View.VISIBLE else View.GONE
             contentTextView.visibility = if (contentTextView.text.isNullOrEmpty()) View.GONE else View.VISIBLE
@@ -103,7 +119,15 @@ class ClipboardAdapter(
         }
 
         override fun onLongClick(view: View): Boolean {
-            clipboardHistoryManager?.toggleClipPinned(view.tag as Long)
+            val manager = clipboardHistoryManager ?: return true
+            if (manager.cacheView == ClipboardHistoryManager.CacheView.TRASH) {
+                // Muninn: in Recently deleted, holding a clip deletes it for good
+                manager.deleteClipForever(view.tag as Long)
+                onCacheChanged()
+            } else {
+                manager.toggleClipPinned(view.tag as Long)
+                if (manager.cacheView != ClipboardHistoryManager.CacheView.ALL) onCacheChanged()
+            }
             return true
         }
     }

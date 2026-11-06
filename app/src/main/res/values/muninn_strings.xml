@@ -40,4 +40,40 @@
     <!-- Preferences: arrow-pad key -->
     <string name="muninn_show_dpad_key">Arrow pad key</string>
     <string name="muninn_show_dpad_key_summary">Show the four-arrow key next to the space bar on the symbols keyboard. Tap it for arrow keys, or hold and slide to pick one.</string>
+    <!-- Clipboard settings: the cache -->
+    <string name="muninn_skip_sensitive">Skip passwords</string>
+    <string name="muninn_skip_sensitive_summary">Never keep anything an app marks as secret, like copied passwords</string>
+    <string name="muninn_expire_codes">Codes delete themselves</string>
+    <string name="muninn_expire_codes_summary">One-time codes like 482913 are hidden and deleted after 10 minutes</string>
+    <string name="muninn_keep_deleted">Recently deleted</string>
+    <string name="muninn_keep_deleted_summary">Deleted clips wait 30 days before they are gone, so you can bring them back</string>
+    <!-- The cache: line under each clip -->
+    <string name="muninn_clip_code">Code</string>
+    <string name="muninn_clip_deleted_ago">deleted %s</string>
+    <plurals name="muninn_clip_code_expires">
+        <item quantity="one">deletes itself in %d min</item>
+        <item quantity="other">deletes itself in %d min</item>
+    </plurals>
+    <!-- The cache panel in the keyboard -->
+    <string name="muninn_tab_all">All</string>
+    <string name="muninn_tab_pinned">Pinned</string>
+    <string name="muninn_tab_trash">Recently deleted</string>
+    <string name="muninn_empty_trash">Empty</string>
+    <string name="muninn_trash_hint">tap to restore, hold to delete</string>
+    <!-- The cache screen in the app -->
+    <string name="muninn_cache_title">The cache</string>
+    <string name="muninn_cache_kept">%d kept</string>
+    <string name="muninn_cache_search">Search everything Muninn kept</string>
+    <string name="muninn_filter_links">Links</string>
+    <string name="muninn_filter_codes">Codes</string>
+    <string name="muninn_cache_trash_note">Deleted clips are kept for %d days, then they are gone.</string>
+    <string name="muninn_cache_empty">Nothing here yet. Copy something and it will show up.</string>
+    <string name="muninn_cache_no_match">Nothing matches your search.</string>
+    <string name="muninn_cache_file">File</string>
+    <string name="muninn_cache_pin">Pin</string>
+    <string name="muninn_cache_unpin">Unpin</string>
+    <string name="muninn_cache_delete">Delete</string>
+    <string name="muninn_cache_delete_forever">Delete forever</string>
+    <string name="muninn_cache_restore">Restore</string>
+    <string name="muninn_cache_copied">Copied</string>
 </resources>

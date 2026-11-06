@@ -157,6 +157,9 @@ object Defaults {
     const val PREF_MORE_POPUP_KEYS = "main"
     const val PREF_SPACE_TO_CHANGE_LANG = false // Muninn: long-press space moves the cursor instead
     const val PREF_SPACE_LONG_PRESS_CURSOR = true
+    const val PREF_MUNINN_SKIP_SENSITIVE = true // passwords and other clips apps mark as secret are never saved
+    const val PREF_MUNINN_EXPIRE_CODES = true // one-time codes delete themselves after 10 minutes
+    const val PREF_MUNINN_KEEP_DELETED = true // deleted clips wait 30 days in Recently deleted
     const val PREF_LANGUAGE_SWIPE_DISTANCE = 5
     const val PREF_TOUCHPAD_SENSITIVITY = 50
     const val PREF_TOUCHPAD_EDGE_SCROLL = true

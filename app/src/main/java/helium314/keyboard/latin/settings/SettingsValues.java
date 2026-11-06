@@ -77,6 +77,9 @@ public class SettingsValues {
     public final boolean mShowTldPopupKeys;
     public final boolean mSpaceForLangChange;
     public final boolean mSpaceLongPressCursor;
+    public final boolean mMuninnSkipSensitive;
+    public final boolean mMuninnExpireCodes;
+    public final boolean mMuninnKeepDeleted;
     public final boolean mShowsEmojiKey;
     public final boolean mShowsDpadKey;
     public final boolean mVarToolbarDirection;
@@ -215,6 +218,9 @@ public class SettingsValues {
         mShowTldPopupKeys = prefs.getBoolean(Settings.PREF_SHOW_TLD_POPUP_KEYS, Defaults.PREF_SHOW_TLD_POPUP_KEYS);
         mSpaceForLangChange = prefs.getBoolean(Settings.PREF_SPACE_TO_CHANGE_LANG, Defaults.PREF_SPACE_TO_CHANGE_LANG);
         mSpaceLongPressCursor = prefs.getBoolean(Settings.PREF_SPACE_LONG_PRESS_CURSOR, Defaults.PREF_SPACE_LONG_PRESS_CURSOR);
+        mMuninnSkipSensitive = prefs.getBoolean(Settings.PREF_MUNINN_SKIP_SENSITIVE, Defaults.PREF_MUNINN_SKIP_SENSITIVE);
+        mMuninnExpireCodes = prefs.getBoolean(Settings.PREF_MUNINN_EXPIRE_CODES, Defaults.PREF_MUNINN_EXPIRE_CODES);
+        mMuninnKeepDeleted = prefs.getBoolean(Settings.PREF_MUNINN_KEEP_DELETED, Defaults.PREF_MUNINN_KEEP_DELETED);
         mShowsEmojiKey = prefs.getBoolean(Settings.PREF_SHOW_EMOJI_KEY, Defaults.PREF_SHOW_EMOJI_KEY);
         mShowsDpadKey = prefs.getBoolean(Settings.PREF_SHOW_DPAD_KEY, Defaults.PREF_SHOW_DPAD_KEY);
         mVarToolbarDirection = mToolbarMode != ToolbarMode.HIDDEN && prefs.getBoolean(Settings.PREF_VARIABLE_TOOLBAR_DIRECTION, Defaults.PREF_VARIABLE_TOOLBAR_DIRECTION);

@@ -23,8 +23,17 @@ class ClipboardHistoryEntry(
     var isPinned: Boolean,
     val text: String?,
     val filename: String?,
-    val mimeTypes: List<String>?
+    val mimeTypes: List<String>?,
+    /** Muninn: package of the app the clip was copied in, if known */
+    val source: String? = null,
+    /** Muninn: when the clip was moved to Recently deleted (ms), null if it is not deleted */
+    var deletedAt: Long? = null,
+    /** Muninn: when the clip deletes itself (ms), used for one-time codes; null = kept */
+    val expiresAt: Long? = null,
 ) : Comparable<ClipboardHistoryEntry> {
+    /** Muninn: one-time codes are shown hidden and delete themselves */
+    val isCode get() = expiresAt != null
+
     // for display order
     override fun compareTo(other: ClipboardHistoryEntry): Int {
         val result = other.isPinned.compareTo(isPinned)

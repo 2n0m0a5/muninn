@@ -167,6 +167,10 @@ public final class Settings implements SharedPreferences.OnSharedPreferenceChang
     public static final String PREF_SPACE_TO_CHANGE_LANG = "prefs_long_press_keyboard_to_change_lang";
     // Muninn: long-press the space bar, then slide to move the cursor
     public static final String PREF_SPACE_LONG_PRESS_CURSOR = "muninn_space_long_press_cursor";
+    // Muninn: the cache
+    public static final String PREF_MUNINN_SKIP_SENSITIVE = "muninn_skip_sensitive";
+    public static final String PREF_MUNINN_EXPIRE_CODES = "muninn_expire_codes";
+    public static final String PREF_MUNINN_KEEP_DELETED = "muninn_keep_deleted";
     public static final String PREF_LANGUAGE_SWIPE_DISTANCE = "language_swipe_distance";
     public static final String PREF_TOUCHPAD_SENSITIVITY = "touchpad_sensitivity";
     public static final String PREF_TOUCHPAD_EDGE_SCROLL = "touchpad_edge_scroll";

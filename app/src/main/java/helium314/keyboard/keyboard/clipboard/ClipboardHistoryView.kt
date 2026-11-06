@@ -90,7 +90,9 @@ class ClipboardHistoryView @JvmOverloads constructor(
         clipboardAdapter = ClipboardAdapter(clipboardLayoutParams, this).apply {
             itemBackgroundId = keyBackgroundId
             pinnedIconResId = pinIconId
+            onCacheChanged = { refreshCacheView() }
         }
+        setupTabs()
         placeholderView = findViewById(R.id.clipboard_empty_view)
         clipboardRecyclerView = findViewById<ClipboardHistoryRecyclerView>(R.id.clipboard_list).apply {
             val colCount = resources.getInteger(R.integer.config_clipboard_keyboard_col_count)
@@ -149,9 +151,11 @@ class ClipboardHistoryView @JvmOverloads constructor(
         clipboardHistoryManager = historyManager
         initialize()
         setupToolbarKeys()
+        historyManager.cacheView = ClipboardHistoryManager.CacheView.ALL // Muninn: always open on All
         historyManager.prepareClipboardHistory()
         historyManager.setHistoryChangeListener(this)
         clipboardAdapter.clipboardHistoryManager = historyManager
+        updateTabs()
 
         val params = KeyDrawParams()
         params.updateParams(clipboardLayoutParams.bottomRowKeyboardHeight, keyVisualAttr)
@@ -189,6 +193,61 @@ class ClipboardHistoryView @JvmOverloads constructor(
         toolbarKeys.forEach { it.isEnabled = false; it.isEnabled = true }
     }
 
+    // ---- Muninn: tabs for All / Pinned / Recently deleted ----
+
+    private val tabViews by lazy {
+        mapOf(
+            ClipboardHistoryManager.CacheView.ALL to findViewById<TextView>(R.id.clipboard_tab_all),
+            ClipboardHistoryManager.CacheView.PINNED to findViewById<TextView>(R.id.clipboard_tab_pinned),
+            ClipboardHistoryManager.CacheView.TRASH to findViewById<TextView>(R.id.clipboard_tab_trash),
+        )
+    }
+    private val emptyTrashView by lazy { findViewById<TextView>(R.id.clipboard_tab_empty_trash) }
+
+    private fun setupTabs() {
+        tabViews.forEach { (view, tab) ->
+            tab.setOnClickListener {
+                if (!::clipboardHistoryManager.isInitialized) return@setOnClickListener
+                keyboardActionListener.onPressKey(KeyCode.NOT_SPECIFIED, 0, 1, HapticEvent.KEY_PRESS)
+                keyboardActionListener.onReleaseKey(KeyCode.NOT_SPECIFIED, false)
+                clipboardHistoryManager.cacheView = view
+                refreshCacheView()
+                clipboardRecyclerView.scrollToPosition(0)
+            }
+        }
+        emptyTrashView.setOnClickListener {
+            if (!::clipboardHistoryManager.isInitialized) return@setOnClickListener
+            clipboardHistoryManager.emptyTrash()
+            refreshCacheView()
+        }
+    }
+
+    private fun refreshCacheView() {
+        if (!this::clipboardAdapter.isInitialized || !::clipboardHistoryManager.isInitialized) return
+        clipboardAdapter.notifyDataSetChanged()
+        updateTabs()
+    }
+
+    private fun updateTabs() {
+        if (!::clipboardHistoryManager.isInitialized) return
+        val colors = Settings.getValues().mColors
+        val selectedColor = colors.get(ColorType.CLIPBOARD_PIN)
+        val otherColor = colors.get(ColorType.KEY_HINT_TEXT)
+        val current = clipboardHistoryManager.cacheView
+        tabViews.forEach { (view, tab) ->
+            tab.setTextColor(if (view == current) selectedColor else otherColor)
+            tab.setTypeface(tab.typeface, if (view == current) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
+        }
+        val pinned = clipboardHistoryManager.pinnedCount()
+        val trash = clipboardHistoryManager.trashCount()
+        tabViews[ClipboardHistoryManager.CacheView.PINNED]?.text =
+            if (pinned > 0) context.getString(R.string.muninn_tab_pinned) + " " + pinned else context.getString(R.string.muninn_tab_pinned)
+        tabViews[ClipboardHistoryManager.CacheView.TRASH]?.text =
+            if (trash > 0) context.getString(R.string.muninn_tab_trash) + " " + trash else context.getString(R.string.muninn_tab_trash)
+        emptyTrashView.visibility = if (current == ClipboardHistoryManager.CacheView.TRASH && trash > 0) VISIBLE else GONE
+        emptyTrashView.setTextColor(otherColor)
+    }
+
     fun stopClipboardHistory() {
         if (!this::clipboardAdapter.isInitialized) return
         clipboardRecyclerView.adapter = null
@@ -219,6 +278,13 @@ class ClipboardHistoryView @JvmOverloads constructor(
     }
 
     override fun onKeyUp(clipId: Long) {
+        if (clipboardHistoryManager.cacheView == ClipboardHistoryManager.CacheView.TRASH) {
+            // Muninn: in Recently deleted, tapping a clip brings it back
+            clipboardHistoryManager.restoreClip(clipId)
+            keyboardActionListener.onReleaseKey(KeyCode.NOT_SPECIFIED, false)
+            refreshCacheView()
+            return
+        }
         val clipContent = clipboardHistoryManager.getHistoryEntryContent(clipId)
         if (clipContent?.filename != null) keyboardActionListener.onContent(clipContent.getContentInfo(context))
         else keyboardActionListener.onTextInput(clipContent?.text)
@@ -227,16 +293,23 @@ class ClipboardHistoryView @JvmOverloads constructor(
             keyboardActionListener.onCodeInput(KeyCode.ALPHA, Constants.NOT_A_COORDINATE, Constants.NOT_A_COORDINATE, false)
     }
 
+    // Muninn: positions from the database are positions in "All"; other tabs just redraw
     override fun onClipInserted(position: Int) {
+        if (clipboardHistoryManager.cacheView != ClipboardHistoryManager.CacheView.ALL) return refreshCacheView()
         clipboardAdapter.notifyItemInserted(position)
         clipboardRecyclerView.smoothScrollToPosition(position)
+        updateTabs()
     }
 
     override fun onClipsRemoved(position: Int, count: Int) {
+        if (clipboardHistoryManager.cacheView != ClipboardHistoryManager.CacheView.ALL) return refreshCacheView()
         clipboardAdapter.notifyItemRangeRemoved(position, count)
+        updateTabs()
     }
 
     override fun onClipMoved(oldPosition: Int, newPosition: Int) {
+        if (clipboardHistoryManager.cacheView != ClipboardHistoryManager.CacheView.ALL) return refreshCacheView()
+        updateTabs()
         clipboardAdapter.notifyItemMoved(oldPosition, newPosition)
         clipboardAdapter.notifyItemChanged(newPosition)
         if (newPosition < oldPosition) clipboardRecyclerView.smoothScrollToPosition(newPosition)

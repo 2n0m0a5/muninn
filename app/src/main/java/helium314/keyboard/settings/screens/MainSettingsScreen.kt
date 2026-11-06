@@ -86,6 +86,7 @@ fun MainSettingsScreen(
     onClickLayouts: () -> Unit,
     onClickDictionaries: () -> Unit,
     onClickBack: () -> Unit,
+    onClickCache: () -> Unit = {},
 ) {
     SearchSettingsScreen(
         onClickBack = onClickBack,
@@ -100,6 +101,7 @@ fun MainSettingsScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 MuninnHeader()
+                CacheCard(onClickCache)
                 PopularSettings()
 
                 Group(R.string.muninn_group_typing, R.string.muninn_group_typing_raven) {
@@ -208,6 +210,39 @@ private fun MuninnHeader() {
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+    }
+}
+
+/** "The cache" card: how much Muninn keeps, opens the cache screen */
+@Composable
+private fun CacheCard(onClick: () -> Unit) {
+    val ctx = LocalContext.current
+    val dao = remember { helium314.keyboard.latin.database.ClipboardDao.getInstance(ctx) }
+    val gold = MaterialTheme.colorScheme.primary
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .border(BorderStroke(1.dp, gold.copy(alpha = 0.4f)), RoundedCornerShape(20.dp))
+            .clickable { onClick() }
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        Box(
+            Modifier.size(48.dp).clip(RoundedCornerShape(14.dp)).background(gold.copy(alpha = 0.13f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(painterResource(R.drawable.ic_muninn_feather), null, Modifier.size(width = 12.dp, height = 28.dp).rotate(18f))
+        }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Text(stringResource(R.string.muninn_cache_title), fontFamily = MuninnSerif, fontSize = 26.sp, lineHeight = 28.sp)
+            Text(
+                stringResource(R.string.muninn_cache_kept, dao?.count() ?: 0),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        NextScreenIcon()
     }
 }
 

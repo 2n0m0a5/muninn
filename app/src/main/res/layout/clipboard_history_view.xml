@@ -13,6 +13,49 @@
     android:background="@android:color/transparent"
     style="?attr/clipboardHistoryViewStyle">
 
+    <!-- Muninn: All / Pinned / Recently deleted -->
+    <LinearLayout
+        android:id="@+id/clipboard_tabs"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/muninn_clipboard_tabs_height"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="6dp">
+        <TextView
+            android:id="@+id/clipboard_tab_all"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:paddingHorizontal="12dp"
+            android:text="@string/muninn_tab_all"/>
+        <TextView
+            android:id="@+id/clipboard_tab_pinned"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:paddingHorizontal="12dp"
+            android:text="@string/muninn_tab_pinned"/>
+        <TextView
+            android:id="@+id/clipboard_tab_trash"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:paddingHorizontal="12dp"
+            android:text="@string/muninn_tab_trash"/>
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1"/>
+        <TextView
+            android:id="@+id/clipboard_tab_empty_trash"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:paddingHorizontal="12dp"
+            android:visibility="gone"
+            android:text="@string/muninn_empty_trash"/>
+    </LinearLayout>
+
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content">

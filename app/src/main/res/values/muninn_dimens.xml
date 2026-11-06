@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-only -->
+<resources>
+    <dimen name="muninn_clipboard_tabs_height">34dp</dimen>
+</resources>

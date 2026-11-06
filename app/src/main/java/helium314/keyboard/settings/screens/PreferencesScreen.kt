@@ -79,6 +79,9 @@ fun PreferencesScreen(
         R.string.settings_category_clipboard_history,
         Settings.PREF_ENABLE_CLIPBOARD_HISTORY,
         if (clipboardHistoryEnabled) Settings.PREF_CLIPBOARD_HISTORY_RETENTION_TIME else null,
+        if (clipboardHistoryEnabled) Settings.PREF_MUNINN_SKIP_SENSITIVE else null,
+        if (clipboardHistoryEnabled) Settings.PREF_MUNINN_EXPIRE_CODES else null,
+        if (clipboardHistoryEnabled) Settings.PREF_MUNINN_KEEP_DELETED else null,
         if (clipboardHistoryEnabled) Settings.PREF_CLIPBOARD_HISTORY_PINNED_FIRST else null,
         if (clipboardHistoryEnabled) Settings.PREF_CLIPBOARD_USE_FILES else null,
         if (clipboardHistoryEnabled && prefs.getBoolean(Settings.PREF_CLIPBOARD_USE_FILES, Defaults.PREF_CLIPBOARD_USE_FILES))
@@ -173,6 +176,16 @@ fun createPreferencesSettings(context: Context) = listOf(
     {
         val ctx = LocalContext.current
         SwitchPreference(it, Defaults.PREF_ENABLE_CLIPBOARD_HISTORY) { ClipboardDao.getInstance(ctx)?.clearNonPinned() }
+    },
+    Setting(context, Settings.PREF_MUNINN_SKIP_SENSITIVE, R.string.muninn_skip_sensitive, R.string.muninn_skip_sensitive_summary) {
+        SwitchPreference(it, Defaults.PREF_MUNINN_SKIP_SENSITIVE)
+    },
+    Setting(context, Settings.PREF_MUNINN_EXPIRE_CODES, R.string.muninn_expire_codes, R.string.muninn_expire_codes_summary) {
+        SwitchPreference(it, Defaults.PREF_MUNINN_EXPIRE_CODES)
+    },
+    Setting(context, Settings.PREF_MUNINN_KEEP_DELETED, R.string.muninn_keep_deleted, R.string.muninn_keep_deleted_summary) {
+        val ctx = LocalContext.current
+        SwitchPreference(it, Defaults.PREF_MUNINN_KEEP_DELETED) { on -> if (!on) ClipboardDao.getInstance(ctx)?.emptyTrash() }
     },
     Setting(context, Settings.PREF_CLIPBOARD_HISTORY_RETENTION_TIME, R.string.clipboard_history_retention_time) { setting ->
         val ctx = LocalContext.current

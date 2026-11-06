@@ -9,6 +9,7 @@ import android.net.Uri
 import android.os.SystemClock
 import android.webkit.MimeTypeMap
 import androidx.core.content.FileProvider
+import androidx.core.database.getLongOrNull
 import androidx.core.database.getStringOrNull
 import helium314.keyboard.latin.ClipboardHistoryEntry
 import helium314.keyboard.latin.common.FileUtils
@@ -34,11 +35,15 @@ class ClipboardDao private constructor(private val db: Database) {
     // we clean up old clips when a new clip is added, but not too frequently
     private var lastClearOldClips = 0L
 
+    /** Muninn: clips in Recently deleted, newest deletion first. Kept for [TRASH_DAYS] days, then removed for good. */
+    private val trash = mutableListOf<ClipboardHistoryEntry>()
+
     // cache is loaded at start and never dropped
     private val cache = mutableListOf<ClipboardHistoryEntry>().apply {
         db.readableDatabase.query(
             TABLE,
-            arrayOf(COLUMN_ID, COLUMN_TIMESTAMP, COLUMN_PINNED, COLUMN_TEXT, COLUMN_FILE, COLUMN_MIME_TYPE),
+            arrayOf(COLUMN_ID, COLUMN_TIMESTAMP, COLUMN_PINNED, COLUMN_TEXT, COLUMN_FILE, COLUMN_MIME_TYPE,
+                COLUMN_SOURCE, COLUMN_DELETED, COLUMN_EXPIRES),
             null,
             null,
             null,
@@ -46,21 +51,27 @@ class ClipboardDao private constructor(private val db: Database) {
             "$COLUMN_PINNED, $COLUMN_TIMESTAMP DESC" // was only relevant in the initial approach of using a cursor instead of a cache
         ).use {
             while (it.moveToNext()) {
-                add(ClipboardHistoryEntry(
+                val entry = ClipboardHistoryEntry(
                     it.getLong(0),
                     it.getLong(1),
                     it.getInt(2) != 0,
                     it.getStringOrNull(3),
                     it.getStringOrNull(4),
                     it.getStringOrNull(5)?.split('§')?.filter { it.isNotEmpty() },
-                ))
+                    it.getStringOrNull(6),
+                    it.getLongOrNull(7),
+                    it.getLongOrNull(8),
+                )
+                if (entry.deletedAt != null) trash.add(entry) else add(entry)
             }
         }
         sort()
+        trash.sortByDescending { it.deletedAt }
     }
 
-    fun addClip(timestamp: Long, pinned: Boolean, text: String) = synchronized(this) {
+    fun addClip(timestamp: Long, pinned: Boolean, text: String, source: String? = null, expiresAt: Long? = null) = synchronized(this) {
         clearOldClips()
+        trash.filter { it.text == text && it.filename == null }.takeIf { it.isNotEmpty() }?.let { deleteForever(it) }
         val existingIndex = cache.indexOfFirst { it.text == text }
         if (existingIndex >= 0 && cache[existingIndex].timeStamp == timestamp)
             return@synchronized // nothing to do
@@ -68,10 +79,10 @@ class ClipboardDao private constructor(private val db: Database) {
             updateTimestampAt(existingIndex, timestamp)
             return@synchronized
         }
-        insertNewEntry(timestamp, pinned, text, null, null, null)
+        insertNewEntry(timestamp, pinned, text, null, null, null, source, expiresAt)
     }
 
-    fun addClipUri(timestamp: Long, pinned: Boolean, uri: Uri, description: ClipDescription, context: Context) = synchronized(this) {
+    fun addClipUri(timestamp: Long, pinned: Boolean, uri: Uri, description: ClipDescription, context: Context, source: String? = null) = synchronized(this) {
         clearOldClips()
         val extension = if (description.mimeTypeCount == 0) ""
             else ".${MimeTypeMap.getSingleton().getExtensionFromMimeType(description.getMimeType(0))}"
@@ -93,7 +104,7 @@ class ClipboardDao private constructor(private val db: Database) {
         tempFile.renameTo(file)
         // we could try getting a thumbnail using context.contentResolver.loadThumbnail(uri, Size(a, b), null)
         // but currently we don't cache them anyway, so no use for that
-        insertNewEntry(timestamp, pinned, description.label?.toString(), file.name, description.getMimeTypes(), context)
+        insertNewEntry(timestamp, pinned, description.label?.toString(), file.name, description.getMimeTypes(), context, source)
     }
 
     // keep pinned and the first non-pinned, others can be deleted
@@ -117,8 +128,13 @@ class ClipboardDao private constructor(private val db: Database) {
     }
 
     /** only public for restoring backups */
-    fun insertNewEntry(timestamp: Long, pinned: Boolean, text: String?, filename: String?, mimeTypes: List<String>?, context: Context?) {
-        val cv = ContentValues(5)
+    fun insertNewEntry(
+        timestamp: Long, pinned: Boolean, text: String?, filename: String?, mimeTypes: List<String>?, context: Context?,
+        source: String? = null, expiresAt: Long? = null,
+    ) {
+        val cv = ContentValues(7)
+        cv.put(COLUMN_SOURCE, source)
+        cv.put(COLUMN_EXPIRES, expiresAt)
         cv.put(COLUMN_TIMESTAMP, timestamp)
         cv.put(COLUMN_PINNED, pinned)
         cv.put(COLUMN_TEXT, text)
@@ -127,7 +143,7 @@ class ClipboardDao private constructor(private val db: Database) {
         cv.put(COLUMN_MIME_TYPE, mimeTypes?.joinToString("§"))
         val rowId = db.writableDatabase.insert(TABLE, null, cv)
 
-        val entry = ClipboardHistoryEntry(rowId, timestamp, pinned, text, filename, mimeTypes)
+        val entry = ClipboardHistoryEntry(rowId, timestamp, pinned, text, filename, mimeTypes, source, null, expiresAt)
         if (filename != null && context != null)
             deleteIfSizeExceeded(context.prefs())
         cache.add(entry)
@@ -149,7 +165,7 @@ class ClipboardDao private constructor(private val db: Database) {
 
     fun getAt(index: Int) = cache[index]
 
-    fun get(id: Long) = cache.first { it.id == id }
+    fun get(id: Long) = cache.firstOrNull { it.id == id } ?: trash.first { it.id == id }
 
     fun getAll(): List<ClipboardHistoryEntry> = cache
 
@@ -177,7 +193,76 @@ class ClipboardDao private constructor(private val db: Database) {
 
     // RecyclerView initiates this, so we don't call listener (or we'll get an IndexOutOfRangeException from RecyclerView)
     fun deleteClipAt(index: Int) {
-        delete(listOf(cache[index]))
+        moveToTrash(listOf(cache[index]))
+    }
+
+    // ---- Muninn: Recently deleted ----
+
+    fun getTrash(): List<ClipboardHistoryEntry> = trash
+
+    fun trashCount() = trash.size
+
+    /** Delete clips the way a person deletes: into Recently deleted, unless that is turned off. One-time codes go for good. */
+    fun moveToTrash(entries: List<ClipboardHistoryEntry>) = synchronized(this) {
+        if (entries.isEmpty()) return@synchronized
+        val keepDeleted = Settings.getValues()?.mMuninnKeepDeleted ?: Defaults.PREF_MUNINN_KEEP_DELETED
+        val (codes, others) = entries.partition { it.isCode }
+        delete(codes)
+        if (!keepDeleted) {
+            delete(others)
+            return@synchronized
+        }
+        val now = System.currentTimeMillis()
+        cache.removeAll(others)
+        others.forEach {
+            it.deletedAt = now
+            it.isPinned = false
+        }
+        trash.addAll(0, others)
+        val cv = ContentValues(2)
+        cv.put(COLUMN_DELETED, now)
+        cv.put(COLUMN_PINNED, false)
+        db.writableDatabase.update(TABLE, cv, "$COLUMN_ID IN (${others.joinToString(",") { it.id.toString() }})", null)
+    }
+
+    /** Delete a clip by id from wherever it is: live clips go to Recently deleted, deleted clips go for good. */
+    fun deleteById(id: Long) {
+        val inCache = cache.indexOfFirst { it.id == id }
+        if (inCache >= 0) {
+            moveToTrash(listOf(cache[inCache]))
+            listener?.onClipsRemoved(inCache, 1)
+            return
+        }
+        trash.firstOrNull { it.id == id }?.let { deleteForever(listOf(it)) }
+    }
+
+    fun restore(id: Long) = synchronized(this) {
+        val entry = trash.firstOrNull { it.id == id } ?: return@synchronized
+        trash.remove(entry)
+        entry.deletedAt = null
+        cache.add(entry)
+        cache.sort()
+        val cv = ContentValues(1)
+        cv.putNull(COLUMN_DELETED)
+        db.writableDatabase.update(TABLE, cv, "$COLUMN_ID = ${entry.id}", null)
+        listener?.onClipInserted(cache.indexOf(entry))
+    }
+
+    fun deleteForever(entries: List<ClipboardHistoryEntry>) = synchronized(this) {
+        trash.removeAll(entries)
+        delete(entries)
+    }
+
+    fun emptyTrash() = deleteForever(trash.toList())
+
+    /** one-time codes past their time, and clips deleted more than [TRASH_DAYS] days ago */
+    private fun removeExpired() {
+        val now = System.currentTimeMillis()
+        val expiredCodes = cache.filter { it.expiresAt != null && it.expiresAt < now }
+        if (expiredCodes.isNotEmpty()) delete(expiredCodes)
+        val trashLimit = now - TRASH_DAYS * 24 * 60 * 60 * 1000L
+        val oldTrash = trash.filter { (it.deletedAt ?: now) < trashLimit }
+        if (oldTrash.isNotEmpty()) deleteForever(oldTrash)
     }
 
     private fun delete(entries: List<ClipboardHistoryEntry>) = synchronized(this) {
@@ -194,6 +279,7 @@ class ClipboardDao private constructor(private val db: Database) {
             return
 
         lastClearOldClips = SystemClock.elapsedRealtime()
+        removeExpired()
         val retentionTime = Settings.getValues()?.mClipboardHistoryRetentionTime ?: 121L
         if (retentionTime > 120) return
         val minTime = System.currentTimeMillis() - retentionTime * 60 * 1000L
@@ -209,12 +295,16 @@ class ClipboardDao private constructor(private val db: Database) {
         }
         if (indicesToRemove.isEmpty())
             return // nothing to remove
-        delete(cache.filter { !it.isPinned })
+        moveToTrash(cache.filter { !it.isPinned })
         listener?.onClipsRemoved(indicesToRemove[0], indicesToRemove.size)
     }
 
     fun clear() {
-        if (count() == 0) return
+        trash.clear()
+        if (count() == 0) {
+            db.writableDatabase.delete(TABLE, null, null)
+            return
+        }
         cache.clear()
         listener?.onClipsRemoved(0, count())
         db.writableDatabase.delete(TABLE, null, null)
@@ -228,7 +318,7 @@ class ClipboardDao private constructor(private val db: Database) {
 
         val files = clipFilesDir.listFiles()?.toMutableList() ?: return
         val fnames = files.mapTo(HashSet()) { it.name }
-        val entries = cache.filter { it.filename != null }
+        val entries = (cache + trash).filter { it.filename != null }
         val enames = entries.mapTo(HashSet()) { it.filename }
 
         val filesToRemove = files.filter { it.name !in enames }
@@ -240,6 +330,7 @@ class ClipboardDao private constructor(private val db: Database) {
 
         Log.w(TAG, "deleting ${filesToRemove.size} files and ${entriesToRemove.size} clipboard entries")
         filesToRemove.forEach { it.delete() }
+        trash.removeAll(entriesToRemove)
         delete(entriesToRemove)
 
         deleteIfSizeExceeded(prefs)
@@ -268,6 +359,14 @@ class ClipboardDao private constructor(private val db: Database) {
 
         const val ADD_FILE_COLUMN = "ALTER TABLE $TABLE ADD COLUMN $COLUMN_FILE TEXT"
         const val ADD_MIME_TYPE_COLUMN = "ALTER TABLE $TABLE ADD COLUMN $COLUMN_MIME_TYPE TEXT"
+        // Muninn
+        private const val COLUMN_SOURCE = "SOURCE" // package of the app the clip came from
+        private const val COLUMN_DELETED = "DELETED" // time the clip went to Recently deleted, null if it didn't
+        private const val COLUMN_EXPIRES = "EXPIRES" // time a one-time code deletes itself
+        const val ADD_SOURCE_COLUMN = "ALTER TABLE $TABLE ADD COLUMN $COLUMN_SOURCE TEXT"
+        const val ADD_DELETED_COLUMN = "ALTER TABLE $TABLE ADD COLUMN $COLUMN_DELETED INTEGER"
+        const val ADD_EXPIRES_COLUMN = "ALTER TABLE $TABLE ADD COLUMN $COLUMN_EXPIRES INTEGER"
+        const val TRASH_DAYS = 30
 
         private var instance: ClipboardDao? = null
         lateinit var clipFilesDir: File
