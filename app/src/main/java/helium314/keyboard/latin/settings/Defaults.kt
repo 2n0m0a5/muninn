@@ -76,7 +76,7 @@ object Defaults {
     const val PREF_BLOCK_POTENTIALLY_OFFENSIVE = true
     const val PREF_SHOW_LANGUAGE_SWITCH_KEY = false
     const val PREF_LANGUAGE_SWITCH_KEY = "internal"
-    const val PREF_SHOW_EMOJI_KEY = false
+    const val PREF_SHOW_EMOJI_KEY = true // Muninn: emojis one tap away, next to the space bar
     const val PREF_SHOW_DPAD_KEY = false // Muninn: the arrow-pad key next to the space bar is opt-in
     const val PREF_VARIABLE_TOOLBAR_DIRECTION = true
     const val PREF_ADDITIONAL_SUBTYPES = "de${Separators.SET}${ExtraValue.KEYBOARD_LAYOUT_SET}=MAIN:qwerty${Separators.SETS}" +
@@ -168,6 +168,7 @@ object Defaults {
     const val PREF_MUNINN_QUIET_END = 8
     const val PREF_MUNINN_OFFER_LET_GO = true
     const val PREF_MUNINN_LOCK_CACHE = false
+    const val PREF_MUNINN_SCREENSHOTS = false // needs permission to read pictures, so it is the person's choice
     const val PREF_MUNINN_GUARD = true // Layer 4: notice when another keyboard takes over
     const val PREF_MUNINN_GUARD_AUTO = true // switch back by itself, once the one-time permission is granted
     const val PREF_MUNINN_KEEP_DAYS = 0 // 0: keep clips forever; otherwise unpinned clips older than this go to Deleted
@@ -178,7 +179,7 @@ object Defaults {
     const val PREF_CLIPBOARD_HISTORY_RETENTION_TIME = 121 // minutes; above 120 means no limit (Muninn keeps everything)
     const val PREF_CLIPBOARD_HISTORY_PINNED_FIRST = true
     const val PREF_CLIPBOARD_USE_FILES = true
-    const val PREF_CLIPBOARD_FILES_SIZE_LIMIT = 20 // megabytes
+    const val PREF_CLIPBOARD_FILES_SIZE_LIMIT = 500 // megabytes; Muninn keeps screenshots and pictures too
     const val PREF_ADD_TO_PERSONAL_DICTIONARY = false
     @JvmField
     val PREF_NAVBAR_COLOR = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q

@@ -59,6 +59,7 @@ import androidx.core.content.edit
 import helium314.keyboard.keyboard.KeyboardSwitcher
 import helium314.keyboard.keyboard.KeyboardTheme
 import helium314.keyboard.latin.MuninnClips
+import helium314.keyboard.latin.MuninnScreenshots
 import helium314.keyboard.latin.MuninnReminders
 import helium314.keyboard.latin.R
 import helium314.keyboard.latin.common.ColorType
@@ -236,6 +237,7 @@ fun MuninnMemoryScreen(onClickBack: () -> Unit, onClickClipboardSettings: () -> 
                     stringResource(R.string.muninn_codes_expire), stringResource(R.string.muninn_codes_expire_sub))
                 MuninnPrefSwitch(Settings.PREF_MUNINN_KEEP_DELETED, Defaults.PREF_MUNINN_KEEP_DELETED,
                     stringResource(R.string.muninn_keep_deleted_30), stringResource(R.string.muninn_keep_deleted_30_sub))
+                ScreenshotsSwitch()
                 MuninnPrefSwitch(Settings.PREF_MUNINN_LOCK_CACHE, Defaults.PREF_MUNINN_LOCK_CACHE,
                     stringResource(R.string.muninn_lock_cache), stringResource(R.string.muninn_lock_cache_short), divider = false)
             }
@@ -258,11 +260,6 @@ fun MuninnMemoryScreen(onClickBack: () -> Unit, onClickClipboardSettings: () -> 
                     Text(stringResource(R.string.muninn_three_ways_explained), fontSize = 12.5.sp, lineHeight = 18.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 MuninnDivider()
-                MuninnRowItem(stringResource(R.string.muninn_remind_per_day), stringResource(R.string.muninn_remind_per_day_sub)) {
-                    MuninnStepper(perDay.toString(),
-                        onMinus = { if (perDay > 1) { perDay--; prefs.edit { putInt(Settings.PREF_MUNINN_REMIND_PER_DAY, perDay) }; saved() } },
-                        onPlus = { if (perDay < 10) { perDay++; prefs.edit { putInt(Settings.PREF_MUNINN_REMIND_PER_DAY, perDay) }; saved() } })
-                }
                 MuninnRowItem(stringResource(R.string.muninn_quiet_hours), stringResource(R.string.muninn_quiet_hours_sub), onClick = { askQuiet = true }) {
                     Box(Modifier.height(38.dp).clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surfaceContainerHighest)
                         .clickable { askQuiet = true }.padding(horizontal = 12.dp), contentAlignment = Alignment.Center) {
@@ -334,6 +331,30 @@ fun MuninnMemoryScreen(onClickBack: () -> Unit, onClickClipboardSettings: () -> 
             }
         }
     )
+}
+
+/** "Keep recent screenshots": asks for the pictures permission the first time it is turned on */
+@Composable
+private fun ScreenshotsSwitch() {
+    val ctx = LocalContext.current
+    val haptic = LocalHapticFeedback.current
+    var on by remember { mutableStateOf(MuninnScreenshots.enabled(ctx) && MuninnScreenshots.hasPermission(ctx)) }
+    fun set(v: Boolean) {
+        on = v
+        ctx.prefs().edit { putBoolean(Settings.PREF_MUNINN_SCREENSHOTS, v) }
+        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+        if (v) Thread { MuninnScreenshots.collect(ctx) }.start()
+    }
+    val permission = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) set(true) else Toast.makeText(ctx, R.string.muninn_screenshots_denied, Toast.LENGTH_LONG).show()
+    }
+    fun toggle(v: Boolean) {
+        if (v && !MuninnScreenshots.hasPermission(ctx)) permission.launch(MuninnScreenshots.permission()) else set(v)
+    }
+    MuninnRowItem(stringResource(R.string.muninn_screenshots), stringResource(R.string.muninn_screenshots_sub), onClick = { toggle(!on) }) {
+        MuninnSwitch(on) { toggle(it) }
+    }
 }
 
 @Composable

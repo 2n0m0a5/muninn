@@ -79,8 +79,11 @@ class ClipboardHistoryManager(
         val timeStamp = ClipboardManagerCompat.getClipTimestamp(clipData)
         val settings = latinIME.mSettings.current
 
-        // Muninn: never keep what an app marks as secret (copied passwords, for example)
-        if (settings.mMuninnSkipSensitive && ClipboardManagerCompat.getClipSensitivity(description) == true) return
+        // Muninn: never keep what an app marks as secret (copied passwords, for example),
+        // nor anything copied while the keyboard is serving a password field
+        if (settings.mMuninnSkipSensitive && (ClipboardManagerCompat.getClipSensitivity(description) == true
+                    || latinIME.currentInputEditorInfo?.let { helium314.keyboard.latin.utils.InputTypeUtils.isPasswordInputType(it.inputType) } == true))
+            return
         // Muninn: remember which app the clip came from (the app whose text field the keyboard last served)
         val source = latinIME.currentInputEditorInfo?.packageName?.takeIf { it != latinIME.packageName }
 
@@ -89,8 +92,10 @@ class ClipboardHistoryManager(
             if (TextUtils.isEmpty(content)) return
             val text = content.toString()
             // Muninn: one-time codes delete themselves
-            val expiresAt = if (settings.mMuninnExpireCodes && MuninnClips.isOneTimeCode(text))
-                System.currentTimeMillis() + MuninnClips.CODE_LIFETIME_MS else null
+            // one-time codes are always hidden; "Codes delete themselves" decides whether they also go after 10 minutes
+            val expiresAt = if (!MuninnClips.isOneTimeCode(text)) null
+                else if (settings.mMuninnExpireCodes) System.currentTimeMillis() + MuninnClips.CODE_LIFETIME_MS
+                else MuninnClips.CODE_KEPT
             clipboardDao?.addClip(timeStamp, false, text, source, expiresAt)
         } else if (maySaveFromUri(clipItem.uri, latinIME)) {
             clipboardDao?.addClipUri(timeStamp, false, clipItem.uri, description, latinIME, source)

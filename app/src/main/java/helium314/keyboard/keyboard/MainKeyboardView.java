@@ -813,6 +813,10 @@ public final class MainKeyboardView extends KeyboardView implements DrawingProxy
         paint.setTextAlign(Align.CENTER);
         paint.setTextSize(mLanguageOnSpacebarTextSize);
         final String customText = Settings.getValues().mSpaceBarText;
+        if (customText.isEmpty() && !DebugFlags.DEBUG_ENABLED) {
+            drawMuninnSpacebar(key, canvas, paint, keyboard);
+            return;
+        }
         final String spaceText;
         if (!customText.isEmpty()) {
             spaceText = customText;
@@ -841,6 +845,46 @@ public final class MainKeyboardView extends KeyboardView implements DrawingProxy
         }
         canvas.drawText(spaceText, width / 2f, baseline - descent, paint);
         paint.clearShadowLayer();
+        paint.setTextScaleX(1.0f);
+    }
+
+    private Typeface mRuneTypeface;
+
+    /**
+     * Muninn: the space bar carries ᛗᚢᚾᛁᚾᚾ, always, with the language in use small underneath
+     * (the language fades like before; the runes stay).
+     */
+    private void drawMuninnSpacebar(final Key key, final Canvas canvas, final Paint paint, final Keyboard keyboard) {
+        final int width = key.getWidth();
+        final int height = key.getHeight();
+        if (mRuneTypeface == null) {
+            try {
+                mRuneTypeface = androidx.core.content.res.ResourcesCompat.getFont(getContext(), helium314.keyboard.latin.R.font.muninn_runic);
+            } catch (Exception e) {
+                mRuneTypeface = Typeface.DEFAULT;
+            }
+            if (mRuneTypeface == null) mRuneTypeface = Typeface.DEFAULT;
+        }
+        paint.clearShadowLayer();
+        paint.setTextAlign(Align.CENTER);
+        // the runes
+        paint.setTypeface(mRuneTypeface);
+        paint.setTextSize(mLanguageOnSpacebarTextSize * 0.9f);
+        paint.setLetterSpacing(0.35f);
+        paint.setColor(mLanguageOnSpacebarTextColor);
+        paint.setAlpha(190);
+        final String runes = "\u16D7\u16A2\u16BE\u16C1\u16BE\u16BE"; // ᛗᚢᚾᛁᚾᚾ
+        final float runeBaseline = height * 0.5f + (-paint.ascent() - paint.descent()) * 0.3f;
+        canvas.drawText(runes, width / 2f, runeBaseline, paint);
+        paint.setLetterSpacing(0f);
+        // the language, smaller and lower
+        paint.setTextSize(mLanguageOnSpacebarTextSize * 0.58f);
+        final String language = layoutLanguageOnSpacebar(paint, keyboard.mId.getSubtype(), width);
+        paint.setTypeface(KeyboardTypeface.resolve(language, Typeface.DEFAULT));
+        paint.setColor(mLanguageOnSpacebarTextColor);
+        paint.setAlpha(mLanguageOnSpacebarAnimAlpha * 170 / 255);
+        final float languageBaseline = Math.min(height - paint.descent() - height * 0.08f, runeBaseline + (-paint.ascent()) * 1.25f);
+        canvas.drawText(language, width / 2f, languageBaseline, paint);
         paint.setTextScaleX(1.0f);
     }
 

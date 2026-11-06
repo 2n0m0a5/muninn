@@ -10,8 +10,6 @@ import java.util.TimeZone
  */
 object MuninnReminderTimes {
     const val HOUR = 60 * 60 * 1000L
-    /** "Later" brings a reminder back this much later */
-    const val LATER_DELAY = 3 * HOUR
     const val TONIGHT_HOUR = 19
     const val MORNING_HOUR = 9
 
@@ -60,26 +58,36 @@ object MuninnReminderTimes {
         return c.timeInMillis
     }
 
-    /** when a reminder comes back after "Later" */
-    fun laterTime(now: Long, quietStart: Int, quietEnd: Int, quietEnabled: Boolean, tz: TimeZone = TimeZone.getDefault()) =
-        outsideQuietHours(now + LATER_DELAY, quietStart, quietEnd, quietEnabled, tz)
+    /** "Later": somewhere between one and four hours from now, never the same twice */
+    fun laterTime(now: Long, random: java.util.Random, quietStart: Int, quietEnd: Int, quietEnabled: Boolean, tz: TimeZone = TimeZone.getDefault()) =
+        outsideQuietHours(now + logUniform(random, LATER_MIN, LATER_MAX), quietStart, quietEnd, quietEnabled, tz)
+
+    const val LATER_MIN = HOUR
+    const val LATER_MAX = 4 * HOUR
+    const val GAP_MIN = 20 * 60 * 1000L
+    const val GAP_MAX = 36 * HOUR
+
+    /** a length of time between [min] and [max], spread evenly over the scale (as likely 20-40 min as 18-36 h) */
+    fun logUniform(random: java.util.Random, min: Long, max: Long): Long {
+        val lo = kotlin.math.ln(min.toDouble())
+        val hi = kotlin.math.ln(max.toDouble())
+        return kotlin.math.exp(lo + random.nextDouble() * (hi - lo)).toLong()
+    }
 
     /**
-     * Gaps between the times a reminder comes back: it starts close together and spreads out, so it is noticed
-     * without becoming noise. Each gap is shaken by up to 30% either way, so it never turns into a predictable
-     * rhythm the brain learns to ignore (habituation).
+     * When a reminder comes back next. Every gap is drawn fresh and on its own, anywhere from 20 minutes to 36 hours,
+     * with no rhythm and no growing pattern: like the digits of pi, nothing to learn, so it is never tuned out.
+     * [timesShown] is kept for the record but does not shape the gap.
      */
-    private val GAPS_HOURS = longArrayOf(3, 5, 9, 24, 48, 72, 120, 168)
-
-    /** when a reminder comes back after it was shown [timesShown] times (1 = it was just shown for the first time) */
     fun nextOccurrence(
-        timesShown: Int, now: Long, random: java.util.Random,
+        @Suppress("UNUSED_PARAMETER") timesShown: Int, now: Long, random: java.util.Random,
         quietStart: Int, quietEnd: Int, quietEnabled: Boolean, tz: TimeZone = TimeZone.getDefault()
-    ): Long {
-        val gap = GAPS_HOURS[(timesShown - 1).coerceIn(0, GAPS_HOURS.lastIndex)] * HOUR
-        val jitter = 0.7 + random.nextDouble() * 0.6 // 0.7 .. 1.3
-        return outsideQuietHours(now + (gap * jitter).toLong(), quietStart, quietEnd, quietEnabled, tz)
-    }
+    ): Long = outsideQuietHours(now + logUniform(random, GAP_MIN, GAP_MAX), quietStart, quietEnd, quietEnabled, tz)
+
+    /** which ways a reminder comes back this time: the chip, the notification, or both; chosen at random each time */
+    enum class Ways { CHIP, NOTIFICATION, BOTH }
+
+    fun pickWays(random: java.util.Random): Ways = Ways.entries[random.nextInt(Ways.entries.size)]
 
     /** a number for the calendar day of [time], used to count reminders per day */
     fun dayKey(time: Long, tz: TimeZone = TimeZone.getDefault()): Int =

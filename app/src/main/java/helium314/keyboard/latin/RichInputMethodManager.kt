@@ -56,6 +56,11 @@ class RichInputMethodManager private constructor() {
 
     val isShortcutImeReady get() = shortcuts.isNotEmpty()
 
+    /** Muninn: whether Muninn's own voice typing can work (the phone has a speech service) */
+    val isVoiceTypingAvailable: Boolean by lazy {
+        try { android.speech.SpeechRecognizer.isRecognitionAvailable(context) } catch (_: Exception) { false }
+    }
+
     fun getEnabledInputMethodSubtypes(imi: InputMethodInfo, allowsImplicitlySelectedSubtypes: Boolean) =
         inputMethodInfoCache.getEnabledInputMethodSubtypeList(imi, allowsImplicitlySelectedSubtypes)
 

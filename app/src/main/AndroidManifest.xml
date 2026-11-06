@@ -16,6 +16,11 @@ SPDX-License-Identifier: Apache-2.0 AND GPL-3.0-only
     <!-- Muninn: loud reminders are sent as notifications -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <!-- Muninn: voice typing inside the keyboard -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Muninn: "Keep recent screenshots" (off unless turned on) -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <!-- Muninn Guard: lets Android stop asking to save battery for Muninn, so the guard is not put to sleep -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <!-- Muninn Guard: only granted by the person, once, from a computer (adb shell pm grant ...);
@@ -144,6 +149,12 @@ SPDX-License-Identifier: Apache-2.0 AND GPL-3.0-only
             </intent-filter>
         </activity-alias>
 
+        <activity android:name="MuninnMicPermissionActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
         <!-- Muninn Guard (Layer 4): wakes when the default keyboard changes; the notification's buttons; the keyboard picker -->
         <service android:name="MuninnGuardJobService"
             android:permission="android.permission.BIND_JOB_SERVICE"
@@ -186,6 +197,10 @@ SPDX-License-Identifier: Apache-2.0 AND GPL-3.0-only
     </application>
 
     <queries>
+        <!-- Muninn: the phone's speech service, for voice typing inside the keyboard -->
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
         <!-- To detect other IMEs -->
         <intent>
             <!-- changed to * as it's supposed to help with finding other keyboard apps, see https://github.com/HeliBorg/HeliBoard/issues/1340 -->

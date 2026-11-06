@@ -38,35 +38,38 @@ class MuninnReminderTimesTest {
         assertFalse(MuninnReminderTimes.isQuiet(at(7, 3), 8, 8, tz)) // same start and end: no quiet hours
     }
 
-    @Test fun laterSkipsQuietHours() {
-        // 21:30 + 3 hours = 00:30, inside 23-8, so it moves to 8:00 the next morning
-        assertEquals(at(7, 8), MuninnReminderTimes.laterTime(at(6, 21, 30), 23, 8, true, tz))
-        // 14:00 + 3 hours = 17:00, fine
-        assertEquals(at(6, 17), MuninnReminderTimes.laterTime(at(6, 14), 23, 8, true, tz))
-        // quiet hours off: no change
-        assertEquals(at(7, 0, 30), MuninnReminderTimes.laterTime(at(6, 21, 30), 23, 8, false, tz))
+    @Test fun laterIsOneToFourHoursAndSkipsQuietHours() {
+        repeat(100) { seed ->
+            val r = java.util.Random(seed.toLong())
+            val t = MuninnReminderTimes.laterTime(at(6, 14), r, 23, 8, true, tz)
+            assertTrue(t - at(6, 14) in MuninnReminderTimes.LATER_MIN..MuninnReminderTimes.LATER_MAX)
+            // late in the evening, anything that falls in quiet hours moves to 8:00
+            val late = MuninnReminderTimes.laterTime(at(6, 22, 30), java.util.Random(seed.toLong()), 23, 8, true, tz)
+            assertFalse(MuninnReminderTimes.isQuiet(late, 23, 8, tz))
+        }
     }
 
-    @Test fun comesBackAtIrregularGrowingGaps() {
+    @Test fun comesBackAtRandomUnpatternedTimes() {
         val now = at(6, 10)
         val random = java.util.Random(42)
-        var previousGap = 0L
-        for (shown in 1..6) {
-            val next = MuninnReminderTimes.nextOccurrence(shown, now, random, 23, 8, false, tz)
-            val gap = next - now
-            assertTrue(gap > 0)
-            assertTrue(gap > previousGap * 0.7, "gaps grow (shown=$shown)")
-            previousGap = gap
-        }
-        // the same step gives different times: irregular
-        val a = MuninnReminderTimes.nextOccurrence(1, now, java.util.Random(1), 23, 8, false, tz)
-        val b = MuninnReminderTimes.nextOccurrence(1, now, java.util.Random(2), 23, 8, false, tz)
-        assertTrue(a != b)
+        val gaps = (1..200).map { MuninnReminderTimes.nextOccurrence(it, now, random, 23, 8, false, tz) - now }
+        gaps.forEach { assertTrue(it in MuninnReminderTimes.GAP_MIN..MuninnReminderTimes.GAP_MAX) }
+        // spread over the whole range, no repeats, no growth with the number of times shown
+        assertTrue(gaps.min() < 60 * 60 * 1000L)
+        assertTrue(gaps.max() > 24 * 60 * 60 * 1000L)
+        assertEquals(gaps.size, gaps.toSet().size)
+        assertTrue(gaps.take(100).average() in gaps.drop(100).average() * 0.5..gaps.drop(100).average() * 2.0)
         // never inside quiet hours
         repeat(50) { seed ->
             val t = MuninnReminderTimes.nextOccurrence(1, at(6, 19), java.util.Random(seed.toLong()), 23, 8, true, tz)
             assertFalse(MuninnReminderTimes.isQuiet(t, 23, 8, tz))
         }
+    }
+
+    @Test fun waysAreChosenAtRandom() {
+        val r = java.util.Random(7)
+        val seen = (1..60).map { MuninnReminderTimes.pickWays(r) }.toSet()
+        assertEquals(MuninnReminderTimes.Ways.entries.toSet(), seen)
     }
 
     @Test fun dayKeyChangesAtMidnight() {

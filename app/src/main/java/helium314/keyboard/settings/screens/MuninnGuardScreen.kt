@@ -184,26 +184,28 @@ fun MuninnGuardScreen(onClickBack: () -> Unit) {
                     else ctx.startActivity(Intent(SystemSettings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + ctx.packageName)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                 }
                 if (isXiaomiFamily()) {
-                    // HyperOS keeps its own battery list ("No restrictions") and Autostart list, and no app can read
-                    // either. So: open the right page, then the person ticks it off.
-                    ManualCheckRow(battery, "muninn_guard_battery_done", stringResource(R.string.muninn_guard_check_battery),
-                        stringResource(R.string.muninn_guard_check_battery_hyperos), stringResource(R.string.muninn_guard_check_battery_ok)) {
-                        openHyperOsBattery(ctx)
+                    // Battery: Android's own "run in the background" permission, which apps can read (HyperOS honours it);
+                    // HyperOS's separate battery saver list can't be read, so it is offered as a shortcut, not a check.
+                    CheckRow(battery, stringResource(R.string.muninn_guard_check_battery),
+                        stringResource(if (battery) R.string.muninn_guard_check_battery_ok else R.string.muninn_guard_check_battery_fix)) {
+                        requestBattery(ctx)
                     }
-                    ManualCheckRow(false, "muninn_guard_autostart_done", stringResource(R.string.muninn_guard_check_autostart),
+                    MuninnRowItem(stringResource(R.string.muninn_guard_hyperos_saver), stringResource(R.string.muninn_guard_hyperos_saver_sub),
+                        onClick = { openHyperOsBattery(ctx) }) {
+                        OutlineButton(stringResource(R.string.muninn_open), height = 36.dp) { openHyperOsBattery(ctx) }
+                    }
+                    // Autostart: read through MIUI's private app-op, the same way other apps check it
+                    val autostart = remember(tick) { MuninnGuard.xiaomiAutostartAllowed(ctx) }
+                    if (autostart != null) CheckRow(autostart, stringResource(R.string.muninn_guard_check_autostart),
+                        stringResource(if (autostart) R.string.muninn_guard_check_autostart_ok else R.string.muninn_guard_check_autostart_sub),
+                        divider = false) { openAutostartSettings(ctx) }
+                    else ManualCheckRow(false, "muninn_guard_autostart_done", stringResource(R.string.muninn_guard_check_autostart),
                         stringResource(R.string.muninn_guard_check_autostart_sub), stringResource(R.string.muninn_guard_check_autostart_ok), divider = false) {
                         openAutostartSettings(ctx)
                     }
                 } else CheckRow(battery, stringResource(R.string.muninn_guard_check_battery),
                     stringResource(if (battery) R.string.muninn_guard_check_battery_ok else R.string.muninn_guard_check_battery_fix),
-                    divider = false) {
-                    try {
-                        ctx.startActivity(Intent(SystemSettings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:" + ctx.packageName))
-                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-                    } catch (_: Exception) {
-                        ctx.startActivity(Intent(SystemSettings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-                    }
-                }
+                    divider = false) { requestBattery(ctx) }
             }
         }
 
@@ -226,6 +228,16 @@ fun MuninnGuardScreen(onClickBack: () -> Unit) {
                 }
             }
         }
+    }
+}
+
+/** Android's "let Muninn run in the background" question (the one permission about battery that apps can read) */
+fun requestBattery(ctx: Context) {
+    try {
+        ctx.startActivity(Intent(SystemSettings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:" + ctx.packageName))
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    } catch (_: Exception) {
+        ctx.startActivity(Intent(SystemSettings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
 }
 

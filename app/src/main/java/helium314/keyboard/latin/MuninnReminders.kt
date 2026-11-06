@@ -57,7 +57,7 @@ object MuninnReminders {
     const val ACTION_COPY = "app.muninn.keyboard.REMINDER_COPY"
     const val EXTRA_CLIP_ID = "clip_id"
 
-    private val random = java.util.Random()
+    private val random = java.security.SecureRandom() // Muninn: truly unpredictable times and ways
 
     // ---- settings ----
 
@@ -98,7 +98,7 @@ object MuninnReminders {
     fun later(context: Context, clipId: Long) {
         val dao = ClipboardDao.getInstance(context) ?: return
         val entry = dao.withReminders().firstOrNull { it.id == clipId } ?: return
-        val time = MuninnReminderTimes.laterTime(System.currentTimeMillis(), quietStart(context), quietEnd(context), quietOn(context))
+        val time = MuninnReminderTimes.laterTime(System.currentTimeMillis(), random, quietStart(context), quietEnd(context), quietOn(context))
         dao.setReminder(clipId, time, entry.remindShown, entry.remindSkips + 1)
         afterChange(context, clipId)
     }
@@ -111,12 +111,9 @@ object MuninnReminders {
 
     // ---- counting: at most a few times a day ----
 
-    private fun countOk(context: Context, now: Long): Boolean {
-        val prefs = context.prefs()
-        val today = MuninnReminderTimes.dayKey(now)
-        if (prefs.getInt(PREF_DAY, 0) != today) return true
-        return prefs.getInt(PREF_DAY_COUNT, 0) < perDay(context)
-    }
+    /** Muninn: no daily limit any more; how often things come back is left to chance */
+    @Suppress("UNUSED_PARAMETER")
+    private fun countOk(context: Context, now: Long): Boolean = true
 
     /** a reminder came back once: count it and plan when it comes back next */
     private fun recordOccurrence(context: Context, entry: ClipboardHistoryEntry, now: Long) {
@@ -227,8 +224,10 @@ object MuninnReminders {
                 dao.setReminder(clip.id, tomorrow, clip.remindShown, clip.remindSkips)
                 return@forEach
             }
-            if (canNotify(context)) post(context, clip)
-            addPending(context, clip.id)
+            // the ways it comes back are chosen at random each time (the gold clipboard button is always on while due)
+            val ways = if (canNotify(context)) MuninnReminderTimes.pickWays(random) else MuninnReminderTimes.Ways.CHIP
+            if (ways != MuninnReminderTimes.Ways.CHIP) post(context, clip)
+            if (ways != MuninnReminderTimes.Ways.NOTIFICATION) addPending(context, clip.id)
             recordOccurrence(context, clip, now)
         }
         scheduleNext(context)

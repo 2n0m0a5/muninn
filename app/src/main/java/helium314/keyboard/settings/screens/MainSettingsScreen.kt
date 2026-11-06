@@ -303,8 +303,8 @@ private fun CacheCard(version: Int, onClick: () -> Unit) {
             recent.forEach { (clip, meta) ->
                 Box(Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)))
                 Column(Modifier.padding(vertical = 9.dp, horizontal = 2.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(clipText(ctx, clip), fontSize = 14.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                        color = if (MuninnClips.isLink(clip.text)) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurface)
+                    Text(withLinks(clipText(ctx, clip), !clip.isCode && clip.filename == null, MaterialTheme.colorScheme.tertiary),
+                        fontSize = 14.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurface)
                     Text(meta, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }

@@ -21,15 +21,30 @@ object MuninnClips {
         Regex("""[A-Za-z]{1,3}-\d{4,8}"""),
     )
 
+    // a whole message with a code in it: "Your code is 482913", "Код: 4829", "رمز التحقق 482913"
+    private val codeWords = Regex("""(?i)(code|otp|passcode|pin\b|verif|one[- ]time|login|sign[- ]in|код|пароль|подтвержд|رمز|كود|التحقق|vérification|connexion)""")
+    private val codeInMessage = Regex("""(?<![\d.,-])(\d{5,8}|\d{3}[ -]\d{3}|(?!19|20)\d{4})(?![\d,-]|\.\d)|\b[A-Za-z]{1,3}-\d{4,8}\b""")
+
     fun isOneTimeCode(text: String): Boolean {
         val t = text.trim()
-        if (t.length > 12) return false
-        return codePatterns.any { it.matches(t) }
+        if (t.length <= 12) return codePatterns.any { it.matches(t) }
+        return t.length <= 220 && codeWords.containsMatchIn(t) && codeInMessage.containsMatchIn(t)
     }
 
-    private val linkPattern = Regex("""^(https?://|www\.)\S+$""", RegexOption.IGNORE_CASE)
+    /** a code that is masked but not deleted (when "Codes delete themselves" is off) */
+    const val CODE_KEPT = Long.MAX_VALUE
 
+    private val linkPattern = Regex("""^(https?://|www\.)\S+$""", RegexOption.IGNORE_CASE)
+    private val linkInText = Regex("""(https?://|www\.)[^\s<>"]+""", RegexOption.IGNORE_CASE)
+
+    /** the whole clip is one link */
     fun isLink(text: String?) = text != null && linkPattern.matches(text.trim())
+
+    /** the clip has a link somewhere in it (also after merging a link with other text) */
+    fun hasLink(text: String?) = text != null && linkInText.containsMatchIn(text)
+
+    /** where the links are, to colour them */
+    fun linkRanges(text: String): List<IntRange> = linkInText.findAll(text).map { it.range }.toList()
 
     // ---- tags (Layer 2) ----
 
@@ -52,6 +67,7 @@ object MuninnClips {
     /** the app's name for a package, or null if it can't be found */
     fun appLabel(context: Context, packageName: String?): String? {
         if (packageName.isNullOrEmpty()) return null
+        if (packageName == MuninnScreenshots.SOURCE) return context.getString(R.string.muninn_screenshot)
         return labelCache.getOrPut(packageName) {
             try {
                 val pm = context.packageManager
@@ -75,6 +91,7 @@ object MuninnClips {
         val expiresAt = entry.expiresAt
         when {
             deletedAt != null -> parts.add(context.getString(R.string.muninn_clip_deleted_ago, relative(deletedAt, now)))
+            expiresAt == CODE_KEPT -> parts.add(0, context.getString(R.string.muninn_clip_code))
             expiresAt != null -> {
                 val minutes = ((expiresAt - now) / 60_000L).coerceAtLeast(1)
                 parts.add(0, context.getString(R.string.muninn_clip_code))

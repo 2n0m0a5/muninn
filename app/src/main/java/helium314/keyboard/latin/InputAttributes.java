@@ -102,7 +102,8 @@ public final class InputAttributes {
                 || InputTypeUtils.isEmailVariation(variation)
                 || hasNoMicrophoneKeyOption()
                 || !RichInputMethodManager.isInitialized() // avoid crash when only using spell checker
-                || !RichInputMethodManager.getInstance().isShortcutImeReady();
+                // Muninn: the mic is Muninn's own voice typing; it needs the phone's speech service, not another keyboard
+                || !RichInputMethodManager.getInstance().isVoiceTypingAvailable();
         mShouldShowVoiceInputKey = !noMicrophone;
 
         mDisableGestureFloatingPreviewText = InputAttributes.inPrivateImeOptions(

@@ -218,12 +218,17 @@ private fun ShareSheet(shared: MuninnShare.Shared, sourceLabel: String?, onDone:
                 }
             }
             GoldButton(stringResource(R.string.muninn_reminder_done), height = 54.dp) { onDone(tags.toList(), back.preset) }
-            Text(
-                if (touched) stringResource(R.string.muninn_share_saved_already)
-                else stringResource(R.string.muninn_share_closes_in, secondsLeft),
+            if (touched) Text(stringResource(R.string.muninn_share_saved_already),
                 fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth().padding(top = 0.dp)
-            )
+                modifier = Modifier.fillMaxWidth())
+            else Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(stringResource(R.string.muninn_share_closes_in, secondsLeft), fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                OutlineButton(stringResource(R.string.muninn_share_keep_open), height = 40.dp) {
+                    touched = true
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                }
+            }
         }
     }
 }

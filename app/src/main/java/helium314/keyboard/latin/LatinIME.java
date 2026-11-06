@@ -142,6 +142,13 @@ public class LatinIME extends InputMethodService implements
     private View mInputView;
     private InsetsOutlineProvider mInsetsUpdater;
     private SuggestionStripView mSuggestionStripView;
+    private MuninnVoice mMuninnVoice; // Muninn: voice typing inside the keyboard
+
+    /** Muninn: the bar above the keys, for Muninn's own views (voice, reminders) */
+    @Nullable
+    public SuggestionStripView suggestionStripViewOrNull() {
+        return hasSuggestionStripView() ? mSuggestionStripView : null;
+    }
 
     private RichInputMethodManager mRichImm;
     final KeyboardSwitcher mKeyboardSwitcher;
@@ -593,6 +600,9 @@ public class LatinIME extends InputMethodService implements
         emojiSearchFilter.addAction(EmojiSearchActivity.EMOJI_SEARCH_DONE_ACTION);
         ContextCompat.registerReceiver(this, mEmojiSearchReceiver, emojiSearchFilter, ContextCompat.RECEIVER_NOT_EXPORTED);
 
+        // Muninn: pick up screenshots taken while the keyboard was away
+        new Thread(() -> MuninnScreenshots.INSTANCE.collect(this)).start();
+
         // Muninn, Layer 4: keep the guard waiting for the next change of the default keyboard
         MuninnGuard.INSTANCE.schedule(this);
         MuninnGuard.INSTANCE.cancelNotification(this);
@@ -879,6 +889,7 @@ public class LatinIME extends InputMethodService implements
         if (!restarting) {
             final boolean password = editorInfo != null
                     && helium314.keyboard.latin.utils.InputTypeUtils.isPasswordInputType(editorInfo.inputType);
+            new Thread(() -> MuninnScreenshots.INSTANCE.collect(this)).start(); // Muninn: screenshots taken since the keyboard last opened
             mMuninnReminder = password ? null : MuninnReminders.INSTANCE.pickForKeyboard(this, System.currentTimeMillis());
             mMuninnReminderShown = false;
             updateMuninnCalmSignal();
@@ -1065,6 +1076,7 @@ public class LatinIME extends InputMethodService implements
     }
 
     void onFinishInputViewInternal(final boolean finishingInput) {
+        if (mMuninnVoice != null) mMuninnVoice.cancel(); // Muninn: the keyboard closed, stop listening
         super.onFinishInputView(finishingInput);
         Log.i(TAG, "onFinishInputView");
         cleanupInternalStateForFinishInput();
@@ -1443,7 +1455,10 @@ public class LatinIME extends InputMethodService implements
     // completely replace #onCodeInput.
     public void onEvent(@NonNull final Event event) {
         if (KeyCode.VOICE_INPUT == event.getKeyCode()) {
-            mRichImm.switchToShortcutIme(this);
+            // Muninn: Muninn listens and types itself, instead of switching to another keyboard
+            if (mMuninnVoice == null) mMuninnVoice = new MuninnVoice(this);
+            mMuninnVoice.toggle();
+            return;
         }
         final InputTransaction completeInputTransaction =
                 mInputLogic.onCodeInput(mSettings.getCurrent(), event,
@@ -1650,6 +1665,7 @@ public class LatinIME extends InputMethodService implements
     @Override
     public void setNeutralSuggestionStrip() {
         final SettingsValues currentSettings = mSettings.getCurrent();
+        if (mMuninnVoice != null && mMuninnVoice.showIfListening()) return; // Muninn: listening keeps the bar
         if (tryShowMuninnReminder()) return; // Muninn: a reminder comes first
         if (tryShowClipboardSuggestion()) {
             // clipboard suggestion has been set

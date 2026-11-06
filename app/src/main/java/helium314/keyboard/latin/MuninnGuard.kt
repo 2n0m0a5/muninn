@@ -101,6 +101,21 @@ object MuninnGuard {
     fun isIgnoringBatteryOptimizations(context: Context): Boolean = Build.VERSION.SDK_INT < Build.VERSION_CODES.M ||
         (context.getSystemService(Context.POWER_SERVICE) as PowerManager).isIgnoringBatteryOptimizations(context.packageName)
 
+    /**
+     * Xiaomi's Autostart switch, read the way other apps do it: MIUI / HyperOS keep it as a private permission
+     * (code 10008) in Android's app-ops. Not an official API, so null means "could not tell".
+     */
+    fun xiaomiAutostartAllowed(context: Context): Boolean? = try {
+        val ops = context.getSystemService(Context.APP_OPS_SERVICE) as android.app.AppOpsManager
+        val m = android.app.AppOpsManager::class.java.getMethod("checkOpNoThrow", Int::class.javaPrimitiveType, Int::class.javaPrimitiveType, String::class.java)
+        val mode = m.invoke(ops, 10008, android.os.Process.myUid(), context.packageName) as Int
+        when (mode) {
+            android.app.AppOpsManager.MODE_ALLOWED -> true
+            android.app.AppOpsManager.MODE_IGNORED, android.app.AppOpsManager.MODE_ERRORED -> false
+            else -> null
+        }
+    } catch (_: Throwable) { null }
+
     /** the keyboard's own name, e.g. "Gboard" */
     fun keyboardLabel(context: Context, id: String?): String {
         if (id == null) return "?"
