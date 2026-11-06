@@ -125,6 +125,12 @@ SPDX-License-Identifier: Apache-2.0 AND GPL-3.0-only
         </receiver>
 
         <!-- Muninn, Layer 5: "Share to Muninn" from any app, and "Keep in Muninn" on selected text -->
+        <!-- Muninn: an image clip full screen, with zoom; opened from the cache and from the keyboard -->
+        <activity android:name="helium314.keyboard.settings.MuninnImageActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:theme="@style/MuninnShareTheme" />
         <activity android:name="helium314.keyboard.settings.MuninnShareActivity"
             android:exported="true"
             android:label="@string/muninn_share_label"

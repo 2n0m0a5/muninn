@@ -465,7 +465,7 @@ private fun ClipCard(
                 clip.filename != null -> stringResource(R.string.muninn_cache_file) + (clip.text?.let { " · $it" } ?: "")
                 else -> clip.text.orEmpty()
             }
-            if (clip.filename != null && clip.mimeTypes?.any { it.startsWith("image/") } != false) ClipImage(clip)
+            if (isImage(clip)) ClipImage(clip)
             Text(withLinks(text, !clip.isCode && clip.filename == null, MaterialTheme.colorScheme.tertiary),
                 fontSize = 15.sp, lineHeight = 20.sp, maxLines = 4, overflow = TextOverflow.Ellipsis,
                 letterSpacing = if (clip.isCode) 1.8.sp else 0.sp,
@@ -540,7 +540,13 @@ private fun ClipSheet(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Column(Modifier.padding(horizontal = 4.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(if (clip.isCode) MuninnClips.MASKED_CODE else if (!isText) stringResource(R.string.muninn_cache_file) else clip.text.orEmpty(),
+                if (isImage(clip)) Box(Modifier.fillMaxWidth().clickable { helium314.keyboard.settings.MuninnImageActivity.open(ctx, clip.filename!!) }) {
+                    ClipImage(clip, 220)
+                    Text(stringResource(R.string.muninn_image_tap_to_view), fontSize = 12.sp, color = Color.White,
+                        modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp).clip(RoundedCornerShape(50))
+                            .background(Color(0x99000000)).padding(horizontal = 10.dp, vertical = 4.dp))
+                }
+                else Text(if (clip.isCode) MuninnClips.MASKED_CODE else if (!isText) stringResource(R.string.muninn_cache_file) else clip.text.orEmpty(),
                     fontSize = 16.sp, lineHeight = 23.sp, maxLines = 6, overflow = TextOverflow.Ellipsis)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp), itemVerticalAlignment = Alignment.CenterVertically) {
                     cv.tags.forEach { TagPill(MuninnClips.tagLabel(ctx, it)) }
@@ -552,6 +558,9 @@ private fun ClipSheet(
                 if (!clip.isCode) BigAction(R.drawable.ic_muninn_bell, R.string.muninn_remind, Modifier.weight(1f), gold = true, onClick = onRemind)
                 BigAction(R.drawable.ic_muninn_pin, if (cv.pinned) R.string.muninn_cache_unpin else R.string.muninn_cache_pin, Modifier.weight(1f), onClick = onPin)
                 if (isText) BigAction(R.drawable.ic_muninn_share, R.string.muninn_share, Modifier.weight(1f), onClick = onShare)
+                if (isImage(clip)) BigAction(R.drawable.ic_muninn_search, R.string.muninn_image_view, Modifier.weight(1f)) {
+                    helium314.keyboard.settings.MuninnImageActivity.open(ctx, clip.filename!!)
+                }
             }
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(MaterialTheme.colorScheme.surfaceContainer)) {
                 SheetRow(R.drawable.ic_muninn_edit, stringResource(if (isText) R.string.muninn_edit_text else R.string.muninn_tags), null, onClick = onEdit)
@@ -825,9 +834,11 @@ private fun LockedScreen(onClickBack: () -> Unit, onUnlocked: () -> Unit) {
     }
 }
 
-/** a picture clip (a screenshot, a copied image): a small preview, read once in the background */
+private fun isImage(clip: ClipboardHistoryEntry) = clip.filename != null && clip.mimeTypes?.any { it.startsWith("image/") } != false
+
+/** a picture clip (a screenshot, a copied image): a preview, read once in the background */
 @Composable
-private fun ClipImage(clip: ClipboardHistoryEntry) {
+private fun ClipImage(clip: ClipboardHistoryEntry, heightDp: Int = 150) {
     val bitmap by androidx.compose.runtime.produceState<android.graphics.Bitmap?>(null, clip.filename) {
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             try {
@@ -842,7 +853,7 @@ private fun ClipImage(clip: ClipboardHistoryEntry) {
     }
     bitmap?.let {
         androidx.compose.foundation.Image(it.asImageBitmap(), null, contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-            modifier = Modifier.fillMaxWidth().height(150.dp).clip(RoundedCornerShape(10.dp)))
+            modifier = Modifier.fillMaxWidth().height(heightDp.dp).clip(RoundedCornerShape(10.dp)))
     }
 }
 

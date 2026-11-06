@@ -535,6 +535,10 @@ Afterwards Muninn restarts by itself, and swipe typing is on.</string>
     <string name="muninn_translate_no_model">Translation isn’t available right now. Check the internet for the first download.</string>
     <string name="muninn_translate_from">Translate from %s. Tap to choose.</string>
     <string name="muninn_translate_into">Translate into %s. Tap to choose.</string>
+    <string name="muninn_image_view">View</string>
+    <string name="muninn_image_tap_to_view">Tap to view and zoom</string>
+    <string name="muninn_image_viewer">The copied picture. Pinch or double-tap to zoom.</string>
+    <string name="muninn_image_close">Close</string>
     <string name="muninn_translate_swap">Swap the two languages</string>
     <string name="muninn_translate_pick_from">Translate from</string>
     <string name="muninn_translate_pick_into">Translate into</string>

@@ -105,6 +105,16 @@ class MuninnScreenshots {
         helium314.keyboard.latin.utils.MuninnAppTheme.mode = 1
         try { block() } finally { helium314.keyboard.latin.utils.MuninnAppTheme.mode = -1 }
     }
+    @Test fun imageViewer() {
+        val file = java.io.File.createTempFile("clip", ".png")
+        val bmp = android.graphics.Bitmap.createBitmap(1080, 2400, android.graphics.Bitmap.Config.ARGB_8888)
+        val c = android.graphics.Canvas(bmp)
+        c.drawColor(0xFF1C2334.toInt())
+        val p = android.graphics.Paint().apply { color = 0xFFE8B04B.toInt(); textSize = 120f; isAntiAlias = true }
+        c.drawText("Screenshot", 200f, 1200f, p)
+        file.outputStream().use { bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
+        shoot("image_viewer") { MuninnImageViewer(file) {} }
+    }
     @Test fun welcome() = shoot("welcome") { WelcomeWizard({}, {}) }
     @Test fun guard() = shoot("guard", 1100) { helium314.keyboard.settings.screens.MuninnGuardScreen {} }
 }

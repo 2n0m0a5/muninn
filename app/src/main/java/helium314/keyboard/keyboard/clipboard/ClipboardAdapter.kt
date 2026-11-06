@@ -193,8 +193,31 @@ class ClipboardAdapter(
                 background = round(androidx.core.graphics.ColorUtils.blendARGB(keyBg, 0xFF000000.toInt(), 0.25f), 20, androidx.core.graphics.ColorUtils.setAlphaComponent(gold, 0x55))
                 setPadding(dp(10), dp(10), dp(10), dp(12))
             }
-            // the clip itself, one line, so you know what you are acting on
-            card.addView(label(if (clip.isCode) MuninnClips.MASKED_CODE else clip.text?.replace('\n', ' ') ?: ctx.getString(R.string.muninn_cache_file), ink, 13f).apply {
+            // the clip itself, so you know what you are acting on: one line of text, or the picture (tap it to view and zoom)
+            val image = clip.filename?.takeIf { clip.mimeTypes?.any { m -> m.startsWith("image/") } != false }
+            if (image != null) {
+                val thumb = android.widget.ImageView(ctx).apply {
+                    scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
+                    clipToOutline = true
+                    background = round(keyBg, 14)
+                    contentDescription = ctx.getString(R.string.muninn_image_tap_to_view)
+                    layoutParams = android.widget.LinearLayout.LayoutParams(android.view.ViewGroup.LayoutParams.MATCH_PARENT, dp(130)).apply { setMargins(dp(3), 0, dp(3), dp(10)) }
+                    setOnClickListener {
+                        performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP)
+                        popup.dismiss()
+                        helium314.keyboard.settings.MuninnImageActivity.open(ctx, image)
+                    }
+                }
+                try {
+                    val file = java.io.File(helium314.keyboard.latin.database.ClipboardDao.clipFilesDir, image)
+                    val bounds = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                    android.graphics.BitmapFactory.decodeFile(file.path, bounds)
+                    var sample = 1
+                    while (bounds.outWidth / sample > 800) sample *= 2
+                    thumb.setImageBitmap(android.graphics.BitmapFactory.decodeFile(file.path, android.graphics.BitmapFactory.Options().apply { inSampleSize = sample }))
+                } catch (_: Throwable) { }
+                card.addView(thumb)
+            } else card.addView(label(if (clip.isCode) MuninnClips.MASKED_CODE else clip.text?.replace('\n', ' ') ?: ctx.getString(R.string.muninn_cache_file), ink, 13f).apply {
                 maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END; setPadding(dp(6), dp(2), dp(6), dp(10)); alpha = 0.8f
             })
             // Paste · Pin · Delete
@@ -220,6 +243,10 @@ class ClipboardAdapter(
                 manager.clipboardDaoDelete(id)
                 onCacheChanged()
                 onMenuAction(ctx.getString(R.string.muninn_moved_to_deleted))
+            })
+            if (image != null) actions.addView(bigButton(ctx.getString(R.string.muninn_image_view), keyBg, ink) {
+                popup.dismiss()
+                helium314.keyboard.settings.MuninnImageActivity.open(ctx, image)
             })
             card.addView(actions)
 
