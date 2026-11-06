@@ -180,6 +180,7 @@ public final class Settings implements SharedPreferences.OnSharedPreferenceChang
     public static final String PREF_MUNINN_QUIET_END = "muninn_quiet_end";
     public static final String PREF_MUNINN_OFFER_LET_GO = "muninn_offer_let_go";
     public static final String PREF_MUNINN_LOCK_CACHE = "muninn_lock_cache";
+    public static final String PREF_MUNINN_KEEP_DAYS = "muninn_keep_days";
     public static final String PREF_LANGUAGE_SWIPE_DISTANCE = "language_swipe_distance";
     public static final String PREF_TOUCHPAD_SENSITIVITY = "touchpad_sensitivity";
     public static final String PREF_TOUCHPAD_EDGE_SCROLL = "touchpad_edge_scroll";

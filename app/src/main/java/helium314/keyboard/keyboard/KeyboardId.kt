@@ -66,6 +66,10 @@ data class KeyboardId(
         editorInfo = params.editorInfo
     }
 
+    /** Muninn: a number, phone, date or time field, where the keyboard shows only a number pad */
+    val isNumberInput get() = element.isNumberLayout &&
+            mode in setOf(KeyboardMode.PHONE, KeyboardMode.NUMBER, KeyboardMode.DATE, KeyboardMode.TIME, KeyboardMode.DATETIME)
+
     fun navigateNext(): Boolean {
         return (imeOptions and EditorInfo.IME_FLAG_NAVIGATE_NEXT) != 0
             || imeAction == EditorInfo.IME_ACTION_NEXT

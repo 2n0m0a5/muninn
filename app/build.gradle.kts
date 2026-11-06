@@ -13,8 +13,8 @@ android {
         applicationId = "app.muninn.keyboard"
         minSdk = 21
         targetSdk = 37
-        versionCode = 7
-        versionName = "0.4.0"
+        versionCode = 8
+        versionName = "0.5.0"
         ndk {
             abiFilters.clear()
             abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64"))
@@ -112,6 +112,11 @@ android {
     testOptions {
         unitTests {
             isIncludeAndroidResources = true
+            all { test ->
+                // Muninn: screen renders for comparing with the design canvas (see MuninnScreenshots)
+                System.getProperty("muninn.screenshots")?.let { test.systemProperty("muninn.screenshots", it) }
+                System.getProperty("robolectric.dependency.repo.url")?.let { test.systemProperty("robolectric.dependency.repo.url", it) }
+            }
         }
     }
 

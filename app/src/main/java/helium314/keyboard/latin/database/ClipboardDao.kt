@@ -353,6 +353,12 @@ class ClipboardDao private constructor(private val db: Database) {
 
         lastClearOldClips = SystemClock.elapsedRealtime()
         removeExpired()
+        // Muninn: "Keep clips for 1 year / 3 months": older unpinned clips go to Deleted (not gone at once)
+        val keepDays = Settings.getValues()?.mMuninnKeepDays ?: 0
+        if (keepDays > 0) {
+            val limit = System.currentTimeMillis() - keepDays * 24L * 60 * 60 * 1000
+            moveToTrash(cache.filter { it.timeStamp < limit && !it.isPinned })
+        }
         val retentionTime = Settings.getValues()?.mClipboardHistoryRetentionTime ?: 121L
         if (retentionTime > 120) return
         val minTime = System.currentTimeMillis() - retentionTime * 60 * 1000L

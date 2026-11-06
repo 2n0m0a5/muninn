@@ -26,7 +26,9 @@ import helium314.keyboard.settings.screens.GestureTypingScreen
 import helium314.keyboard.settings.screens.LanguageScreen
 import helium314.keyboard.settings.screens.MainSettingsScreen
 import helium314.keyboard.settings.screens.MuninnCacheScreen
-import helium314.keyboard.settings.screens.MuninnRemindersScreen
+import helium314.keyboard.settings.screens.MuninnMemoryScreen
+import helium314.keyboard.settings.screens.MuninnTypingScreen
+import helium314.keyboard.settings.screens.MuninnLookScreen
 import helium314.keyboard.settings.screens.PersonalDictionariesScreen
 import helium314.keyboard.settings.screens.PersonalDictionaryScreen
 import helium314.keyboard.settings.screens.PreferencesScreen
@@ -81,7 +83,10 @@ fun SettingsNavHost(
                 onClickLayouts = { navController.navigate(SettingsDestination.Layouts) },
                 onClickDictionaries = { navController.navigate(SettingsDestination.Dictionaries) },
                 onClickCache = { navController.navigate(SettingsDestination.Cache) },
-                onClickReminders = { navController.navigate(SettingsDestination.Reminders) },
+                onClickReminders = { navController.navigate(SettingsDestination.Memory) },
+                onClickTyping = { navController.navigate(SettingsDestination.Typing) },
+                onClickMemory = { navController.navigate(SettingsDestination.Memory) },
+                onClickLook = { navController.navigate(SettingsDestination.Look) },
                 onClickBack = ::goBack,
             )
         }
@@ -89,7 +94,24 @@ fun SettingsNavHost(
             MuninnCacheScreen(onClickBack = ::goBack)
         }
         composable(SettingsDestination.Reminders) {
-            MuninnRemindersScreen(onClickBack = ::goBack)
+            MuninnMemoryScreen(onClickBack = ::goBack, onClickClipboardSettings = { navController.navigate(SettingsDestination.Preferences) })
+        }
+        composable(SettingsDestination.Memory) {
+            MuninnMemoryScreen(onClickBack = ::goBack, onClickClipboardSettings = { navController.navigate(SettingsDestination.Preferences) })
+        }
+        composable(SettingsDestination.Typing) {
+            MuninnTypingScreen(
+                onClickBack = ::goBack,
+                onClickLanguages = { navController.navigate(SettingsDestination.Languages) },
+                onClickCorrections = { navController.navigate(SettingsDestination.TextCorrection) },
+                onClickGesture = { navController.navigate(SettingsDestination.GestureTyping) },
+                onClickDictionaries = { navController.navigate(SettingsDestination.Dictionaries) },
+                onClickLayouts = { navController.navigate(SettingsDestination.Layouts) },
+                onClickToolbar = { navController.navigate(SettingsDestination.Toolbar) },
+            )
+        }
+        composable(SettingsDestination.Look) {
+            MuninnLookScreen(onClickBack = ::goBack, onClickAppearance = { navController.navigate(SettingsDestination.Appearance) })
         }
         composable(SettingsDestination.About) {
             AboutScreen(onClickBack = ::goBack)
@@ -176,6 +198,9 @@ object SettingsDestination {
     const val Dictionaries = "dictionaries"
     const val Cache = "muninn_cache"
     const val Reminders = "muninn_reminders"
+    const val Memory = "muninn_memory"
+    const val Typing = "muninn_typing"
+    const val Look = "muninn_look"
     val navTarget = MutableStateFlow(Settings)
 
     private val navScope = CoroutineScope(Dispatchers.Default)

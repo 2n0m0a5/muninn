@@ -216,7 +216,11 @@ public class KeyboardParams {
             : context.getResources().obtainAttributes(attr, R.styleable.Keyboard_Key);
         SettingsValues sv = Settings.getValues();
         try {
-            final int height = mId.getHeight();
+            int height = mId.getHeight();
+            // Muninn: the number row makes the keyboard a row taller. A number pad has no number row, so in number
+            // fields it was stretching its 4 rows over 5 rows of height, making every key (and digit) huge.
+            if (mId.isNumberInput() && sv.mShowsNumberRow && !sv.mIsFloatingKeyboard)
+                height = Math.round(height / 1.33f);
             final int width = mId.getWidth();
             mOccupiedHeight = height;
             mOccupiedWidth = width;

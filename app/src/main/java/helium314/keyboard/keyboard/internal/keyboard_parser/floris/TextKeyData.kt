@@ -319,9 +319,11 @@ sealed interface KeyData : AbstractKeyData {
         val newLabelFlags = if (labelFlags == 0 && params.mId.element.isNumberLayout) {
             if (type == KeyType.NUMERIC) {
                 when (params.mId.element) {
-                    KeyboardElement.PHONE -> Key.LABEL_FLAGS_ALIGN_LABEL_OFF_CENTER or Key.LABEL_FLAGS_HAS_HINT_LABEL or Key.LABEL_FLAGS_FOLLOW_KEY_LARGE_LETTER_RATIO
+                    // Muninn: digits follow the normal letter size (90% of the key height was far too big),
+                    // so the font size setting changes them the same way it changes letters
+                    KeyboardElement.PHONE -> Key.LABEL_FLAGS_ALIGN_LABEL_OFF_CENTER or Key.LABEL_FLAGS_HAS_HINT_LABEL or Key.LABEL_FLAGS_FOLLOW_KEY_LETTER_RATIO
                     KeyboardElement.PHONE_SYMBOLS -> 0
-                    else -> Key.LABEL_FLAGS_FOLLOW_KEY_LARGE_LETTER_RATIO
+                    else -> Key.LABEL_FLAGS_FOLLOW_KEY_LETTER_RATIO
                 }
             } else 0
         } else labelFlags

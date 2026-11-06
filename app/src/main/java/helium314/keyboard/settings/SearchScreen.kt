@@ -4,6 +4,8 @@ package helium314.keyboard.settings
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.collectAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
 import androidx.compose.foundation.background
@@ -52,6 +54,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import helium314.keyboard.latin.utils.getActivity
+import helium314.keyboard.latin.utils.prefs
 import helium314.keyboard.latin.R
 import helium314.keyboard.latin.utils.BackButton
 import helium314.keyboard.latin.utils.CloseIcon
@@ -71,7 +76,7 @@ fun SearchSettingsScreen(
 ) {
     SearchScreen(
         onClickBack = onClickBack,
-        title = { Text(title) },
+        title = { Text(title, fontFamily = helium314.keyboard.latin.utils.MuninnSerif, fontSize = 34.sp, lineHeight = 36.sp) },
         content = {
             if (content != null) content()
             else {
@@ -152,12 +157,15 @@ fun <T: Any?> SearchScreen(
                 else onClickBack()
             }
             Surface(
-                color = MaterialTheme.colorScheme.surfaceContainer,
+                color = MaterialTheme.colorScheme.surface, // Muninn: the header sits on the same raven black as the page
             ) {
                 Column {
                     TopAppBar(
-                        title = title,
+                        // Muninn: every screen title in the serif, like the mockups
+                        title = { CompositionLocalProvider(LocalTextStyle provides LocalTextStyle.current.copy(
+                            fontFamily = helium314.keyboard.latin.utils.MuninnSerif, fontSize = 34.sp, lineHeight = 36.sp)) { title() } },
                         windowInsets = WindowInsets(0),
+                        colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
                         navigationIcon = {
                             BackButton {
                                 if (showSearch) setShowSearch(false)
@@ -272,52 +280,90 @@ private fun MuninnScreenIntro(text: String) {
 
 /**
  * Muninn: progressive disclosure. The essentials sit in one card; the rest waits behind "More options",
- * so a screen never greets you with thirty switches. Search (top right) still finds every setting.
+ * grouped into small cards, so a screen never greets you with thirty switches. Search (top right) still finds every setting.
+ * A gold dot marks what you changed; "Reset this screen" puts this screen back the way it came.
  */
 @Composable
 private fun MuninnEssentialsAndMore(settings: List<Any?>, essentials: Set<String>) {
-    val shown = settings.filterIsInstance<String>().filter { it in essentials }
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val prefs = ctx.prefs()
+    val changes = (ctx.getActivity() as? SettingsActivity)?.prefChanged?.collectAsState()
+    @Suppress("UNUSED_VARIABLE") val trigger = changes?.value // read so the dots update after any change
+    val keys = settings.filterIsInstance<String>()
+    fun changed(key: String): Boolean = prefs.contains(key) ||
+            prefs.all.keys.any { it.startsWith(key + "_") && it !in keys }
+    val shown = keys.filter { it in essentials }
     val rest = settings.filter { it != null && !(it is String && it in essentials) }
     val restCount = rest.count { it is String }
-    var expanded by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
-    val shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp)
-    Column(
-        Modifier.padding(horizontal = 14.dp).fillMaxWidth()
-            .clip(shape).background(androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainer)
-            .padding(vertical = 4.dp)
-    ) {
-        shown.forEach { SettingsActivity.settingsContainer[it]?.Preference() }
-    }
-    if (restCount == 0) return
-    androidx.compose.foundation.layout.Row(
-        Modifier.padding(horizontal = 14.dp, vertical = 14.dp).fillMaxWidth()
-            .clip(shape)
-            .border(1.dp, androidx.compose.material3.MaterialTheme.colorScheme.outlineVariant, shape)
-            .clickable { expanded = !expanded }
-            .padding(horizontal = 18.dp, vertical = 14.dp),
-        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-    ) {
-        Column(Modifier.weight(1f)) {
-            androidx.compose.material3.Text(
-                stringResource(if (expanded) helium314.keyboard.latin.R.string.muninn_fewer_options else helium314.keyboard.latin.R.string.muninn_more_options),
-                style = androidx.compose.material3.MaterialTheme.typography.bodyLarge
-            )
-            androidx.compose.material3.Text(
-                stringResource(helium314.keyboard.latin.R.string.muninn_more_options_description, restCount),
-                style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
-                color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
+    var expanded by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    var askReset by remember { mutableStateOf(false) }
+    val shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp)
+
+    @Composable
+    fun Item(key: String) {
+        Box {
+            SettingsActivity.settingsContainer[key]?.Preference()
+            if (changed(key)) Box(
+                Modifier.padding(start = 6.dp).size(7.dp).align(androidx.compose.ui.Alignment.CenterStart)
+                    .clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary)
             )
         }
-        androidx.compose.material3.Text(if (expanded) "−" else "+", style = androidx.compose.material3.MaterialTheme.typography.titleLarge,
-            color = androidx.compose.material3.MaterialTheme.colorScheme.primary)
+    }
+
+    Column(
+        Modifier.padding(horizontal = 14.dp).fillMaxWidth().clip(shape).background(MaterialTheme.colorScheme.surfaceContainer)
+    ) {
+        shown.forEach { Item(it) }
+        if (restCount > 0) MoreOptionsRow(
+            stringResource(R.string.muninn_more_options_description, restCount), expanded) { expanded = !expanded }
     }
     AnimatedVisibility(visible = expanded) {
-        Column {
+        Column(Modifier.padding(horizontal = 14.dp, vertical = 12.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)) {
+            // a card per group: a category title starts a new one
+            val groups = mutableListOf<Pair<Int?, MutableList<String>>>()
             rest.forEach {
-                if (it is Int) PreferenceCategory(stringResource(it))
-                else SettingsActivity.settingsContainer[it!!]?.Preference()
+                if (it is Int) groups.add(it to mutableListOf())
+                else if (it is String) {
+                    if (groups.isEmpty()) groups.add(null to mutableListOf())
+                    groups.last().second.add(it)
+                }
             }
-            androidx.compose.foundation.layout.Spacer(Modifier.padding(bottom = 80.dp))
+            groups.filter { it.second.isNotEmpty() }.forEach { (title, items) ->
+                Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)) {
+                    if (title != null) MuninnLabel(stringResource(title))
+                    Column(Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainer)) {
+                        items.forEach { Item(it) }
+                    }
+                }
+            }
         }
     }
+    androidx.compose.foundation.layout.Row(
+        Modifier.fillMaxWidth().padding(start = 22.dp, end = 14.dp, top = 12.dp, bottom = 110.dp),
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+    ) {
+        Box(Modifier.size(7.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary))
+        Text(stringResource(R.string.muninn_gold_dot_changed), style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 10.dp).weight(1f))
+        OutlineButton(stringResource(R.string.muninn_reset_screen), height = 40.dp) { askReset = true }
+    }
+    if (askReset) androidx.compose.material3.AlertDialog(
+        onDismissRequest = { askReset = false },
+        title = { Text(stringResource(R.string.muninn_reset_screen)) },
+        text = { Text(stringResource(R.string.muninn_reset_screen_text)) },
+        confirmButton = {
+            androidx.compose.material3.TextButton(onClick = {
+                askReset = false
+                prefs.edit().apply {
+                    keys.forEach { key ->
+                        remove(key)
+                        prefs.all.keys.filter { it.startsWith(key + "_") && it !in keys }.forEach { remove(it) }
+                    }
+                }.apply()
+                helium314.keyboard.keyboard.KeyboardSwitcher.getInstance().setThemeNeedsReload()
+            }) { Text(stringResource(R.string.muninn_reset)) }
+        },
+        dismissButton = { androidx.compose.material3.TextButton(onClick = { askReset = false }) { Text(stringResource(android.R.string.cancel)) } },
+    )
 }

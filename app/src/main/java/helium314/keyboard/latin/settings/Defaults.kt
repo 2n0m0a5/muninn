@@ -168,6 +168,7 @@ object Defaults {
     const val PREF_MUNINN_QUIET_END = 8
     const val PREF_MUNINN_OFFER_LET_GO = true
     const val PREF_MUNINN_LOCK_CACHE = false
+    const val PREF_MUNINN_KEEP_DAYS = 0 // 0: keep clips forever; otherwise unpinned clips older than this go to Deleted
     const val PREF_LANGUAGE_SWIPE_DISTANCE = 5
     const val PREF_TOUCHPAD_SENSITIVITY = 50
     const val PREF_TOUCHPAD_EDGE_SCROLL = true
